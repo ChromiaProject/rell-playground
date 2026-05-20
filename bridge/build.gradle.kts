@@ -122,9 +122,11 @@ val gzipBridgeJar by tasks.registering(Exec::class) {
     val gz = webJvm.file("rell-playground-bridge-all.jar.gz").asFile
     inputs.file(jar)
     outputs.file(gz)
-    // -9 = best ratio. The build runs once per release; spending CPU is fine.
-    // -f forces overwrite, -k keeps the original alongside.
-    commandLine("sh", "-c", "gzip -9 -f -k '${jar.absolutePath}' && mv '${jar.absolutePath}.gz' '${gz.absolutePath}'")
+    // -9 = best ratio; the build runs once per release, CPU is fine.
+    // -c writes to stdout; we redirect so the source .jar is left intact and
+    // the output lands at the expected path even when --output / -o aren't
+    // supported by every gzip flavor (BSD vs GNU). No mv needed.
+    commandLine("sh", "-c", "gzip -9 -c '${jar.absolutePath}' > '${gz.absolutePath}'")
 }
 
 tasks.build {
