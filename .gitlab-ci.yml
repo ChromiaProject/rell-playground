@@ -54,7 +54,7 @@ rell-java17:
     # 2. Build the bridge shadow JAR + outer gzip pass against the
     #    just-published artifacts. settings.gradle.kts has mavenLocal() in
     #    repositories so resolution picks up the local 0.15.4 jars.
-    - ./gradlew --no-daemon -PgitlabAuthHeaderValue=${CI_JOB_TOKEN} :bridge:build
+    - ./gradlew -PgitlabAuthHeaderValue=${CI_JOB_TOKEN} :bridge:build
     - test -f "${BRIDGE_JAR}"    || (echo "shadow JAR missing at ${BRIDGE_JAR}"    && exit 1)
     - test -f "${BRIDGE_JAR}.gz" || (echo "gzipped JAR missing at ${BRIDGE_JAR}.gz" && exit 1)
   artifacts:
@@ -97,6 +97,14 @@ pages:
   script:
     - rm -rf public
     - mv web/dist public
+    # CI_PAGES_URL is a GitLab-predefined variable resolving to the served
+    # URL for the current project's Pages site. Print it so it surfaces in
+    # the job log; `environment.url` also makes it clickable in the GitLab
+    # Pipelines / Environments UI.
+    - 'echo "Pages deployed to: ${CI_PAGES_URL}/"'
+  environment:
+    name: pages
+    url: ${CI_PAGES_URL}
   artifacts:
     paths: [ public ]
   rules: [ { if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH" } ]
