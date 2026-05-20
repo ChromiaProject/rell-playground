@@ -98,10 +98,8 @@ body {
   color: var(--fg-dim);
   font-size: 0.8em;
   font-family: var(--font-mono);
-  max-width: 32ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: help;
 }
 
 .layout {
@@ -271,6 +269,13 @@ body {
   border-top: 1px solid var(--border);
   padding: 0.5rem 1rem;
   background: var(--panel);
+}
+
+.repl-input[hidden] {
+  /* HTML's `hidden` attribute means display:none, but our display:flex above
+     overrides it. Spell it out so the REPL prompt actually disappears in
+     Run-file mode. (Same fix as .progress[hidden].) */
+  display: none;
 }
 
 .repl-input .prompt {

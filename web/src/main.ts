@@ -81,7 +81,16 @@ async function main(): Promise<void> {
   await bridge.init(route);
   progress.hide();
   const version = await bridge.version();
-  versionTag.textContent = version;
+  // Full string is something like:
+  //   "rell: 0.15.4; postchain: 3.49.10; branch: master; commit: …; dirty: true"
+  // Showing the whole thing in the toolbar pushes other actions off-screen.
+  // Surface a compact "rell X · postchain Y" label and stash the full string
+  // on title= so it's still discoverable on hover.
+  const m = /rell:\s*([^;]+);\s*postchain:\s*([^;]+)/i.exec(version);
+  const rell = m?.[1]?.trim();
+  const postchain = m?.[2]?.trim();
+  versionTag.textContent = rell && postchain ? `rell ${rell} · postchain ${postchain}` : version;
+  versionTag.title = version;
   output.appendLine(`Ready — ${version}`, "system");
 
   const busy = (b: boolean): void => {

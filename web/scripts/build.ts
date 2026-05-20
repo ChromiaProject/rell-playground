@@ -13,6 +13,35 @@ const ROOT = resolve(import.meta.dir, "..");
 const DIST = join(ROOT, "dist");
 const PUBLIC = join(ROOT, "public");
 
+// Monaco's standalone modules do `import './standalone-tokens.css'` (and a
+// handful of other .css files). Bun.build's default resolver silently drops
+// CSS imports from JS modules, leaving the production bundle with no Monaco
+// styles at all — the editor renders but every Monaco-positioned element
+// (most visibly textarea.inputarea, which Monaco places via inline
+// top/left) falls back to `position: static`, parking the caret at the
+// editor's top-left corner regardless of click target.
+//
+// This plugin matches the runtime shim in scripts/dev.ts: CSS imports turn
+// into a JS module that appends a <style> tag at load time. Same effect as
+// shipping a separate <link>, but keeps the bundle a single entrypoint and
+// preserves the existing index.html shape.
+const cssAsStyleTagPlugin: import("bun").BunPlugin = {
+  name: "css-as-style-tag",
+  setup(build) {
+    build.onLoad({ filter: /\.css$/ }, async (args) => {
+      const css = await Bun.file(args.path).text();
+      return {
+        contents:
+          `const __s = document.createElement("style");\n` +
+          `__s.textContent = ${JSON.stringify(css)};\n` +
+          `document.head.appendChild(__s);\n` +
+          `export default null;\n`,
+        loader: "js",
+      };
+    });
+  },
+};
+
 if (existsSync(DIST)) rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
 
@@ -26,6 +55,7 @@ const mainResult = await Bun.build({
   minify: true,
   sourcemap: "external",
   naming: "main.[hash].[ext]",
+  plugins: [cssAsStyleTagPlugin],
 });
 if (!mainResult.success) {
   for (const log of mainResult.logs) console.error(log);
