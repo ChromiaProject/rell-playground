@@ -1,0 +1,19 @@
+{
+  "name": "rell-playground-web",
+  "version": "0.1.0",
+  "description": "Single-page Rell playground. Runs the TeaVM-compiled bridge in a Web Worker; vanilla TS + Monaco editor.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "build": "bun run scripts/build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "monaco-editor": "0.52.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.1.13",
+    "typescript": "5.6.3"
+  }
+}

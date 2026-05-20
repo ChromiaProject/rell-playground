@@ -1,0 +1,16 @@
+[versions]
+kotlin = "2.3.0"
+rell = "0.15.4"
+shadow = "9.4.0"
+
+[libraries]
+rell-tools = { module = "net.postchain.rell:rell-tools", version.ref = "rell" }
+rell-api-shell = { module = "net.postchain.rell:rell-api-shell", version.ref = "rell" }
+rell-api-base = { module = "net.postchain.rell:rell-api-base", version.ref = "rell" }
+rell-api-gtx = { module = "net.postchain.rell:rell-api-gtx", version.ref = "rell" }
+rell-base = { module = "net.postchain.rell:rell-base", version.ref = "rell" }
+rell-gtx = { module = "net.postchain.rell:rell-gtx", version.ref = "rell" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

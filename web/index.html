@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rell Playground</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Rell Playground</div>
+      <nav class="mode-switch" role="tablist" aria-label="Mode">
+        <button type="button" data-mode="file" role="tab" aria-selected="true">Run file</button>
+        <button type="button" data-mode="repl" role="tab" aria-selected="false">REPL</button>
+      </nav>
+      <div class="actions">
+        <button type="button" id="run-btn" class="primary">Run ▶</button>
+        <button type="button" id="stop-btn" disabled>Stop ■</button>
+        <button type="button" id="share-btn" title="Copy a share URL">Share 🔗</button>
+        <span id="version-tag" class="version-tag" aria-live="polite"></span>
+      </div>
+    </header>
+    <div id="progress" class="progress" hidden aria-live="polite">
+      <div class="progress-label">
+        <span id="progress-text">Loading…</span>
+        <span id="progress-pct" class="progress-pct"></span>
+      </div>
+      <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+    </div>
+
+    <main class="layout">
+      <section class="editor-pane" aria-label="Editor">
+        <div id="editor" class="editor"></div>
+      </section>
+      <section class="output-pane" aria-label="Output">
+        <div class="output-tabs" role="tablist">
+          <button type="button" id="tab-output" class="output-tab active" role="tab" aria-selected="true" aria-controls="output">Output</button>
+          <button type="button" id="tab-sql" class="output-tab" role="tab" aria-selected="false" aria-controls="sql">SQL</button>
+        </div>
+        <div id="output" class="output" role="log" aria-live="polite"></div>
+        <div id="sql" class="output sql-panel" role="tabpanel" hidden></div>
+        <form id="repl-form" class="repl-input" hidden>
+          <span class="prompt">&gt;&gt;&gt;</span>
+          <input
+            type="text"
+            id="repl-input"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Type a Rell expression and press Enter"
+          />
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

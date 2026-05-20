@@ -1,0 +1,288 @@
+:root {
+  --bg: #1e1e1e;
+  --panel: #252526;
+  --border: #3c3c3c;
+  --fg: #d4d4d4;
+  --fg-dim: #858585;
+  --accent: #007acc;
+  --accent-fg: #ffffff;
+  --error: #f48771;
+  --warning: #cca700;
+  --value: #4ec9b0;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mode-switch button {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.mode-switch button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actions button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.version-tag {
+  color: var(--fg-dim);
+  font-size: 0.8em;
+  font-family: var(--font-mono);
+  max-width: 32ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+}
+
+.editor-pane,
+.output-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editor-pane {
+  border-right: 1px solid var(--border);
+}
+
+.editor {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.output-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85em;
+}
+
+.output-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-dim);
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.output-tab.active {
+  color: var(--fg);
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.sql-panel {
+  white-space: pre;
+  color: var(--value);
+}
+
+.sql-panel .sql-entry {
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sql-panel .sql-entry:last-child {
+  border-bottom: none;
+}
+
+.progress {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 1rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.progress[hidden] {
+  /* HTML5 `hidden` is supposed to mean display: none, but our flex rule above
+     overrides it. Spell it out so the bar actually disappears on init done. */
+  display: none;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  color: var(--fg-dim);
+}
+
+.progress-pct {
+  color: var(--fg);
+}
+
+.progress-track {
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.progress-bar.indeterminate {
+  width: 30%;
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0% { margin-left: -30%; }
+  100% { margin-left: 100%; }
+}
+
+.output {
+  flex: 1 1 auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 0.75rem 1rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.output .line {
+  padding: 0;
+}
+
+.output .line.stdout {
+  color: var(--fg);
+}
+
+.output .line.value {
+  color: var(--value);
+}
+
+.output .line.value::before {
+  content: "= ";
+  color: var(--fg-dim);
+}
+
+.output .line.error {
+  color: var(--error);
+}
+
+.output .line.warning {
+  color: var(--warning);
+}
+
+.output .line.control {
+  color: var(--fg-dim);
+  font-style: italic;
+}
+
+.output .line.input::before {
+  content: ">>> ";
+  color: var(--fg-dim);
+}
+
+.repl-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  background: var(--panel);
+}
+
+.repl-input .prompt {
+  font-family: var(--font-mono);
+  color: var(--fg-dim);
+}
+
+.repl-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  font: 13px var(--font-mono);
+  outline: none;
+}

@@ -1,0 +1,102 @@
+# GitLab CI for rell-playground.
+#
+# Three jobs:
+#  - rell-java17: clones Rell at the pinned tag, re-targets to Java 17
+#                 bytecode (CheerpJ caps at JRE 17), publishes the 6 modules
+#                 the bridge depends on into a transferable Maven repo, and
+#                 also builds the bridge shadow JAR ready for the SPA.
+#  - build:       Bun-based SPA build that consumes the shadow JAR.
+#  - pages:       publishes dist/ to GitLab Pages on the default branch.
+
+stages:
+  - rell
+  - build
+  - deploy
+
+variables:
+  GIT_SUBMODULE_STRATEGY: none
+  GRADLE_OPTS: "-Xmx4g"
+  # Shadow JAR for CheerpJ; the SPA build picks it up from web/public/jvm/.
+  BRIDGE_JAR: "web/public/jvm/rell-playground-bridge-all.jar"
+  JAVA_IMAGE: "eclipse-temurin:21-jdk"
+  # The downgraded Rell artifacts are written into a job-local Maven dir
+  # that the next stage mounts back in. Keeps ~/.m2 out of the cache.
+  RELL_M2: ".m2-rell-java17"
+
+rell-java17:
+  stage: rell
+  image: ${JAVA_IMAGE}
+  cache:
+    key: rell-java17-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .gradle/caches/
+      - .gradle/wrapper/
+      - ${RELL_M2}/
+  before_script:
+    # gzip is in coreutils (already present). git/python3 are needed by
+    # build-rell-java17.sh (clone + idempotent in-place patches).
+    - apt-get update -qq && apt-get install -y -qq git python3
+  script:
+    # `export` so the bash subshell that runs build-rell-java17.sh sees these
+    # vars. Each `script:` line is a fresh `sh -c …` but they share env.
+    - export RELL_REPO_URL="${RELL_REPO_URL:-https://gitlab.com/chromaway/rell.git}"
+    - export RELL_TAG="${RELL_TAG:-0.15.4}"
+    - export RELL_WORK_DIR="${CI_PROJECT_DIR}/.rell-src"
+    # Job-local Maven repo. Both publishToMavenLocal and the bridge build
+    # read/write here via a symlink at $HOME/.m2/repository. We use a symlink
+    # (instead of -Dmaven.repo.local, which Gradle's mavenLocal() ignores) so
+    # cache:paths can scope it under the project dir.
+    - mkdir -p "${CI_PROJECT_DIR}/${RELL_M2}" "${HOME}/.m2"
+    - rm -rf "${HOME}/.m2/repository"
+    - ln -sfn "${CI_PROJECT_DIR}/${RELL_M2}" "${HOME}/.m2/repository"
+    # 1. Build + publish the Java 17 Rell modules into mavenLocal.
+    - bash scripts/build-rell-java17.sh
+    # 2. Build the bridge shadow JAR + outer gzip pass against the
+    #    just-published artifacts. settings.gradle.kts has mavenLocal() in
+    #    repositories so resolution picks up the local 0.15.4 jars.
+    - ./gradlew --no-daemon -PgitlabAuthHeaderValue=${CI_JOB_TOKEN} :bridge:build
+    - test -f "${BRIDGE_JAR}"    || (echo "shadow JAR missing at ${BRIDGE_JAR}"    && exit 1)
+    - test -f "${BRIDGE_JAR}.gz" || (echo "gzipped JAR missing at ${BRIDGE_JAR}.gz" && exit 1)
+  artifacts:
+    paths:
+      # Ship the whole jvm/ folder — the SPA build (build.ts) copies
+      # web/public/ verbatim into web/dist/, and the runtime worker fetches
+      # /jvm/...jar.gz, so the .gz must survive the artifact handoff.
+      - web/public/jvm/
+    expire_in: 1 month
+
+build:
+  stage: build
+  image: ${JAVA_IMAGE}
+  needs:
+    - job: rell-java17
+      artifacts: true
+  cache:
+    key: spa-${CI_COMMIT_REF_SLUG}
+    paths:
+      - web/node_modules/
+  before_script:
+    # Bun is the build tool for the SPA. Install it next to the JDK image.
+    - apt-get update -qq && apt-get install -y -qq curl unzip
+    - curl -fsSL https://bun.sh/install | bash
+    - export PATH="$HOME/.bun/bin:$PATH"
+    - bun --version
+  script:
+    - test -f "${BRIDGE_JAR}.gz" || (echo "Expected ${BRIDGE_JAR}.gz from rell-java17 artifact (worker fetches it at runtime)" && exit 1)
+    - cd web
+    - bun install --frozen-lockfile
+    - bun run build
+  artifacts:
+    paths: [ web/dist/ ]
+    expire_in: 1 week
+
+pages:
+  stage: deploy
+  image: alpine:3.20
+  needs: [ build ]
+  script:
+    - rm -rf public
+    - mv web/dist public
+  artifacts:
+    paths: [ public ]
+  rules: [ { if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH" } ]
