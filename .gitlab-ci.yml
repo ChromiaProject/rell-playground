@@ -36,21 +36,13 @@ variables:
 rell-java17:
   stage: rell
   image: ${JAVA_IMAGE}
-  # Only re-run when something that actually affects the shadow JAR changes.
-  # Other pushes (e.g. SPA-only edits) reuse the cached web/public/jvm/ from
-  # the build job's pull-only cache below.
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "trigger"
-    - changes:
-        - .gitlab-ci.yml
-        - scripts/build-rell-java17.sh
-        - bridge/**/*
-        - gradle/libs.versions.toml
-        - gradle/wrapper/**/*
-        - build.gradle.kts
-        - settings.gradle.kts
-        - gradle.properties
-        - gradlew
+  # Always runs — the build job depends on its artifact in the *same* pipeline
+  # (reliable), so we don't try to hand the JAR across pipelines via cache or
+  # the by-ref artifact API (that 404s the moment a pipeline skips this job).
+  # "Only rebuild when something changed" is instead delivered by Gradle's
+  # incremental build + the warm caches below: when bridge sources and the
+  # Rell tag are unchanged, compileKotlin / shadowJar are UP-TO-DATE and the
+  # Rell publish is served from mavenLocal, so a no-op run is ~1 min.
   cache:
     # Gradle caches: kept under $GRADLE_USER_HOME so a single tree captures
     # both this project's deps AND the Rell-source checkout's deps (the
@@ -72,12 +64,6 @@ rell-java17:
     - key: rell-maven-${CI_COMMIT_REF_SLUG}
       paths:
         - ${RELL_M2}/
-    # `web/public/jvm/` is also cached here so subsequent skipped runs of
-    # rell-java17 leave the SPA bridge JAR sitting on the runner for the
-    # `build` job to pick up.
-    - key: bridge-jar-${CI_COMMIT_REF_SLUG}
-      paths:
-        - web/public/jvm/
   before_script:
     # gzip is in coreutils (already present). git/python3 are needed by
     # build-rell-java17.sh (clone + idempotent in-place patches).
@@ -107,61 +93,31 @@ rell-java17:
     paths:
       # Ship the whole jvm/ folder — the SPA build (build.ts) copies
       # web/public/ verbatim into web/dist/, and the runtime worker fetches
-      # /jvm/...jar.gz, so the .gz must survive the artifact handoff.
+      # /jvm/...jar.gz, so the .gz must survive the artifact handoff to build.
       - web/public/jvm/
-    # never expire: the build job may need this artifact long after the
-    # last rell-java17 run (the rules:changes filter intentionally skips
-    # this job on SPA-only pushes). Runner caches are best-effort and
-    # subject to LRU eviction, so we rely on the artifact as the
-    # authoritative copy and fall back to it via the API in build's
-    # before_script when cache misses.
-    expire_in: never
+    expire_in: 1 week
 
 build:
   stage: build
   image: ${JAVA_IMAGE}
   needs:
-    # optional:true lets `build` proceed even when rell-java17 was skipped
-    # by its rules:changes filter. When that happens, we restore the bridge
-    # JAR from the cache instead of from artifacts.
+    # Same-pipeline, non-optional: build always consumes the JAR rell-java17
+    # just produced. No cross-pipeline cache/API guessing — that's what made
+    # the deployed SPA call runModule against a stale JAR.
     - job: rell-java17
       artifacts: true
-      optional: true
   cache:
     - key: spa-${CI_COMMIT_REF_SLUG}
       paths:
         - web/node_modules/
-    # Pull-only: when rell-java17 didn't run this pipeline, take the JAR
-    # from whatever previous pipeline cached it. This is what makes
-    # SPA-only changes deploy without paying the 5-10 min Rell rebuild tax.
-    - key: bridge-jar-${CI_COMMIT_REF_SLUG}
-      paths:
-        - web/public/jvm/
-      policy: pull
   before_script:
     # Bun is the build tool for the SPA. Install it next to the JDK image.
     - apt-get update -qq && apt-get install -y -qq curl unzip
     - curl -fsSL https://bun.sh/install | bash
     - export PATH="$HOME/.bun/bin:$PATH"
     - bun --version
-    # If neither the optional rell-java17 needs-artifact nor the pull cache
-    # produced the bridge JAR, fall back to the latest rell-java17 artifact
-    # of the default branch via the GitLab API. expire_in:never on that
-    # artifact guarantees a successful past pipeline is always retrievable.
-    - |
-      if [ ! -f "${BRIDGE_JAR}.gz" ]; then
-        echo "Bridge JAR not present from needs/cache; pulling latest from API…"
-        mkdir -p web/public/jvm
-        DL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/artifacts/${CI_DEFAULT_BRANCH}/download?job=rell-java17"
-        if curl -fsSL --header "JOB-TOKEN: ${CI_JOB_TOKEN}" "${DL}" -o /tmp/rell-jvm.zip; then
-          unzip -o -q /tmp/rell-jvm.zip -d .
-          rm -f /tmp/rell-jvm.zip
-        else
-          echo "API fallback failed (no successful rell-java17 artifact on ${CI_DEFAULT_BRANCH}?)"
-        fi
-      fi
   script:
-    - test -f "${BRIDGE_JAR}.gz" || (echo "No ${BRIDGE_JAR}.gz from artifact, cache, or API fallback. Run rell-java17 manually to seed it." && exit 1)
+    - test -f "${BRIDGE_JAR}.gz" || (echo "Expected ${BRIDGE_JAR}.gz from the rell-java17 artifact" && exit 1)
     - cd web
     - bun install --frozen-lockfile
     - bun run build

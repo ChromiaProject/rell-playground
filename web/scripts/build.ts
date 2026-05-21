@@ -7,7 +7,7 @@
 //   4. Copy index.html, styles.css, public/ (including jvm/rell-playground-bridge-all.jar) into dist/
 
 import { existsSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 
 const ROOT = resolve(import.meta.dir, "..");
 const DIST = join(ROOT, "dist");
@@ -29,7 +29,30 @@ const cssAsStyleTagPlugin: import("bun").BunPlugin = {
   name: "css-as-style-tag",
   setup(build) {
     build.onLoad({ filter: /\.css$/ }, async (args) => {
-      const css = await Bun.file(args.path).text();
+      let css = await Bun.file(args.path).text();
+      // Inline url(...) font/asset refs as data: URIs. Once the CSS is a
+      // <style> tag, relative urls resolve against the document base (site
+      // root), not the original file — so e.g. Monaco's
+      //   src: url(./codicon.ttf)
+      // would 404. Resolving + base64-inlining keeps it self-contained.
+      const dir = dirname(args.path);
+      const urlRe = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
+      const matches = [...css.matchAll(urlRe)];
+      for (const mt of matches) {
+        const ref = mt[2]!;
+        if (/^(data:|https?:|\/)/.test(ref)) continue; // already absolute
+        const assetPath = join(dir, ref.split(/[?#]/)[0]!);
+        if (!existsSync(assetPath)) continue;
+        const ext = assetPath.split(".").pop()!.toLowerCase();
+        const mime =
+          ext === "ttf" ? "font/ttf" :
+          ext === "woff" ? "font/woff" :
+          ext === "woff2" ? "font/woff2" :
+          ext === "svg" ? "image/svg+xml" :
+          "application/octet-stream";
+        const b64 = Buffer.from(await Bun.file(assetPath).arrayBuffer()).toString("base64");
+        css = css.replace(mt[0], `url("data:${mime};base64,${b64}")`);
+      }
       return {
         contents:
           `const __s = document.createElement("style");\n` +
