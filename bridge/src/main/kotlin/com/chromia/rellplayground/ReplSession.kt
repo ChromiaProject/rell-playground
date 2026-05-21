@@ -11,7 +11,6 @@ import net.postchain.rell.base.repl.NullReplInterpreterProjExt
 import net.postchain.rell.base.repl.ReplInterpreter
 import net.postchain.rell.base.repl.ReplInterpreterConfig
 import net.postchain.rell.base.runtime.Rt_ModuleArgsSource
-import net.postchain.rell.base.sql.NoConnSqlManager
 
 /**
  * Holds a [ReplInterpreter] plus the [BufferedReplChannel] that captures
@@ -33,7 +32,11 @@ class ReplSession {
             sourceDir = C_SourceDir.EMPTY,
             module = null,
             rtGlobalCtx = globalCtx,
-            sqlMgr = NoConnSqlManager(),
+            // CapturingSqlManager records every SQL string Rell hands to its
+            // executor before the executor throws "no_sql". Browser mode has
+            // no Postgres so DB-touching code still fails at runtime — but the
+            // jOOQ-generated SQL surfaces in the SPA's SQL pane.
+            sqlMgr = CapturingSqlManager(channel),
             projExt = NullReplInterpreterProjExt,
             outChannel = channel,
             moduleArgsSource = Rt_ModuleArgsSource.NULL,

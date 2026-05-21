@@ -5,6 +5,7 @@ export type WorkerRequest =
   | { kind: "init"; requestId: number }
   | { kind: "version"; requestId: number }
   | { kind: "runFile"; requestId: number; code: string }
+  | { kind: "runModule"; requestId: number; code: string }
   | { kind: "replCreate"; requestId: number }
   | { kind: "replExecute"; requestId: number; sessionId: number; command: string }
   | { kind: "replDispose"; requestId: number; sessionId: number };

@@ -22,6 +22,7 @@ type Lib = {
         PlaygroundBridge: {
           version(): Promise<string>;
           runFile(code: string): Promise<string>;
+          runModule(code: string): Promise<string>;
           replCreate(): Promise<number>;
           replExecute(id: number, command: string): Promise<string>;
           replDispose(id: number): Promise<void>;
@@ -36,7 +37,8 @@ type ReplEvent =
   | { type: "value"; text: string }
   | { type: "control"; code: string; message: string }
   | { type: "compiler"; severity: string; code: string; message: string; pos?: string }
-  | { type: "runtimeError"; message: string; stack?: string };
+  | { type: "runtimeError"; message: string; stack?: string }
+  | { type: "sql"; text: string };
 
 type Envelope = { ok: boolean; events: ReplEvent[] };
 
@@ -278,6 +280,9 @@ function forwardEnvelope(requestId: number, raw: string): boolean {
           stack: e.stack ?? null,
         });
         break;
+      case "sql":
+        post({ kind: "sql", requestId, text: e.text });
+        break;
     }
   }
   return env.ok;
@@ -305,6 +310,12 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       }
       case "runFile": {
         const raw = await b.runFile(req.code);
+        const ok = forwardEnvelope(req.requestId, raw);
+        post({ kind: "done", requestId: req.requestId, ok });
+        return;
+      }
+      case "runModule": {
+        const raw = await b.runModule(req.code);
         const ok = forwardEnvelope(req.requestId, raw);
         post({ kind: "done", requestId: req.requestId, ok });
         return;

@@ -10,6 +10,7 @@ export interface BridgeClient {
   init(onEvent?: (e: StreamEvent) => void): Promise<void>;
   version(): Promise<string>;
   runFile(code: string, onEvent: (e: StreamEvent) => void): Promise<boolean>;
+  runModule(code: string, onEvent: (e: StreamEvent) => void): Promise<boolean>;
   replCreate(onEvent: (e: StreamEvent) => void): Promise<number>;
   replExecute(
     sessionId: number,
@@ -63,6 +64,7 @@ export function createBridgeClient(workerUrl: URL): BridgeClient {
     | { kind: "init" }
     | { kind: "version" }
     | { kind: "runFile"; code: string }
+    | { kind: "runModule"; code: string }
     | { kind: "replCreate" }
     | { kind: "replExecute"; sessionId: number; command: string }
     | { kind: "replDispose"; sessionId: number };
@@ -85,6 +87,10 @@ export function createBridgeClient(workerUrl: URL): BridgeClient {
     async version() {
       const r = await send({ kind: "version" });
       return typeof r.result === "string" ? r.result : "unknown";
+    },
+    async runModule(code, onEvent) {
+      const r = await send({ kind: "runModule", code }, onEvent);
+      return r.ok;
     },
     async runFile(code, onEvent) {
       const r = await send({ kind: "runFile", code }, onEvent);

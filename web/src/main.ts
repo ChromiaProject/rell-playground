@@ -1,7 +1,7 @@
 // SPA entry. Wires the editor, output panel, mode switch, and worker bridge.
 
 import { createBridgeClient } from "./bridge/client.ts";
-import { mountEditor } from "./editor/editor.ts";
+import { mountEditor, DEFAULT_FILE, SQL_EXAMPLE } from "./editor/editor.ts";
 import { OutputPanel } from "./output.ts";
 import { createFileMode } from "./modes/file-mode.ts";
 import { createReplMode } from "./modes/repl-mode.ts";
@@ -10,7 +10,7 @@ import { createSqlPanel } from "./sql-panel.ts";
 import type { StreamEvent } from "./bridge/client.ts";
 import { decode, encode } from "./util/share.ts";
 
-type Mode = "file" | "repl";
+type Mode = "file" | "sql" | "repl";
 
 async function main(): Promise<void> {
   const outputEl = document.getElementById("output");
@@ -62,6 +62,11 @@ async function main(): Promise<void> {
   const workerUrl = new URL("./worker.js", import.meta.url);
   const bridge = createBridgeClient(workerUrl);
 
+  // Tracked so route() can reveal the Output tab if a SQL dry-run hits a
+  // real diagnostic (compile error / non-trivial runtime error) — see below.
+  let currentMode: Mode = "file";
+  let revealOutputOnError = (): void => {};
+
   // Funnel stream events: progress → bar, sql → panel, everything else → output.
   const route = (e: StreamEvent): void => {
     if (e.kind === "progress") {
@@ -72,6 +77,12 @@ async function main(): Promise<void> {
     if (e.kind === "sql") {
       sql.append(e.text);
       return;
+    }
+    // In SQL dry-run mode the Output tab is hidden (the pane would otherwise
+    // just show empty results). But a compile error or genuine runtime error
+    // IS worth showing — surface the Output tab when one arrives.
+    if (currentMode === "sql" && (e.kind === "compiler" || e.kind === "runtimeError")) {
+      revealOutputOnError();
     }
     output.appendEvent(e);
   };
@@ -98,19 +109,62 @@ async function main(): Promise<void> {
     stopBtn.disabled = !b;
   };
 
-  const fileMode = createFileMode(bridge, editor, output, busy);
-  const replMode = createReplMode(bridge, editor, output, busy);
+  const clearPanels = (): void => {
+    output.clear();
+    sql.clear();
+  };
+  // Plain "Run" → bridge.runFile (REPL-on-one-command). SQL dry-run →
+  // bridge.runModule (module compile + SQL capture). Same UI machinery.
+  const fileMode = createFileMode(
+    (code, onEvent) => bridge.runFile(code, onEvent), editor, output, busy, route, clearPanels);
+  const sqlMode = createFileMode(
+    (code, onEvent) => bridge.runModule(code, onEvent), editor, output, busy, route, clearPanels);
+  const replMode = createReplMode(bridge, editor, output, busy, route, clearPanels);
+
+  // Which output tabs a mode exposes:
+  //   file / repl → Output only (no SQL is generated worth showing)
+  //   sql         → SQL only, Output hidden until a real diagnostic appears
+  const applyTabsForMode = (m: Mode): void => {
+    const sqlOnly = m === "sql";
+    tabSql.hidden = !sqlOnly;
+    tabOutput.hidden = sqlOnly;
+    setTab(sqlOnly ? "sql" : "output");
+  };
+  revealOutputOnError = (): void => {
+    tabOutput.hidden = false;
+    setTab("output");
+  };
+
+  // Swap the editor's contents to a mode's example, but only if the user
+  // hasn't typed their own program (i.e. the buffer still holds the *other*
+  // mode's pristine default or is empty). Never clobbers real edits.
+  const KNOWN_DEFAULTS = new Set([DEFAULT_FILE.trim(), SQL_EXAMPLE.trim(), ""]);
+  const maybeLoadExample = (m: Mode): void => {
+    if (m === "repl") return; // REPL shares whatever's in the editor
+    const want = m === "sql" ? SQL_EXAMPLE : DEFAULT_FILE;
+    const cur = editor.getValue().trim();
+    if (cur !== want.trim() && KNOWN_DEFAULTS.has(cur)) {
+      editor.setValue(want);
+    }
+  };
 
   let mode: Mode = "file";
+  applyTabsForMode(mode);
   const setMode = async (next: Mode) => {
     if (next === mode) return;
     if (mode === "repl") await replMode.leave();
     mode = next;
+    currentMode = next;
+    // Mode switches reset both panes: a REPL transcript / dry-run SQL is
+    // meaningless after toggling. Keeps the user from staring at stale output.
+    clearPanels();
     for (const b of modeButtons) {
       const active = b.dataset["mode"] === mode;
       b.setAttribute("aria-selected", active ? "true" : "false");
     }
     replForm.hidden = mode !== "repl";
+    applyTabsForMode(mode);
+    maybeLoadExample(mode);
     if (mode === "repl") {
       await replMode.enter();
       replInput.focus();
@@ -121,13 +175,16 @@ async function main(): Promise<void> {
   for (const b of modeButtons) {
     b.addEventListener("click", () => {
       const m = b.dataset["mode"];
-      if (m === "file" || m === "repl") void setMode(m);
+      if (m === "file" || m === "sql" || m === "repl") void setMode(m);
     });
   }
 
-  runBtn.addEventListener("click", () => {
-    void (mode === "file" ? fileMode.run() : replMode.runEditor());
-  });
+  const runCurrent = (): void => {
+    if (mode === "file") void fileMode.run();
+    else if (mode === "sql") void sqlMode.run();
+    else void replMode.runEditor();
+  };
+  runBtn.addEventListener("click", runCurrent);
 
   stopBtn.addEventListener("click", () => {
     bridge.reset();

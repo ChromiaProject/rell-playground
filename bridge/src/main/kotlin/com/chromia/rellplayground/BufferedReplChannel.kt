@@ -77,6 +77,14 @@ class BufferedReplChannel : ReplOutputChannel {
     override fun printControl(code: String, msg: String) =
         appendEvent("control", "code" to code, "message" to msg)
 
+    /**
+     * Record one SQL statement that Rell handed to its [SqlExecutor]. Called
+     * from [CapturingSqlExecutor] before the executor throws "no_sql" (since
+     * we have no database). The SPA routes `sql` events to the SQL pane;
+     * everything else falls through to the output panel.
+     */
+    fun appendSql(sql: String) = appendEvent("sql", "text" to sql)
+
     fun finish(ok: Boolean): String {
         events.append("]")
         return """{"ok":$ok,"events":$events}"""

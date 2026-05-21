@@ -14,13 +14,50 @@ export interface EditorHandle {
   dispose(): void;
 }
 
-const DEFAULT_FILE = `// One-file Rell program. Press Run.
+// Plain "Run" example: pure functions + print. No database needed.
+export const DEFAULT_FILE = `// One-file Rell program. Press Run.
 function fact(n: integer): integer {
     if (n <= 1) return 1;
     return n * fact(n - 1);
 }
 
 print(fact(10));
+`;
+
+// "SQL dry-run" example: declares entities + a query that issues several
+// reads. The browser has no Postgres, so nothing actually executes — but
+// Rell compiles every @-expression to SQL and the "SQL" pane shows what
+// postchain would issue (each at-expression below → its own SELECT).
+//
+// The file is loaded as module 'main' (root); the playground invokes
+// 'query main()' if present.
+//
+// NOTE: write operations (create / update / delete) need a transaction
+// runner the in-browser REPL doesn't provide, so this demo sticks to reads.
+export const SQL_EXAMPLE = `// SQL dry-run. Press Run — see the "SQL" pane for generated statements.
+// No database is attached; queries run against an empty result set.
+
+entity user {
+    key name: text;
+    mutable age: integer;
+}
+
+entity post {
+    key id: integer;
+    index author: user;
+    body: text;
+}
+
+// Each at-expression compiles to its own SELECT.
+query main() {
+    // Filter + sort + projection.
+    val adults = user @* { .age >= 18 } ( @sort .name, .age );
+
+    // Aggregate: count per author (GROUP BY).
+    val post_counts = post @* {} ( @group .author.name, @sum 1 );
+
+    return (adults = adults, post_counts = post_counts);
+}
 `;
 
 export async function mountEditor(container: HTMLElement, initial?: string): Promise<EditorHandle> {

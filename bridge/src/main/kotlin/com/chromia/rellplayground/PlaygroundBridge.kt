@@ -30,11 +30,28 @@ object PlaygroundBridge {
         return Rt_RellVersion.getInstance()?.buildDescriptor ?: "rell (unknown version)"
     }
 
-    /** One-file mode: fresh session, executes whole source as one REPL command, dropped after. */
+    /**
+     * Plain one-file mode: run the whole source as a single REPL command in a
+     * fresh, throwaway session. Good for pure functions, `print`, expression
+     * evaluation, struct/enum defs — anything that doesn't need a database.
+     * Entity / query / operation declarations are rejected here (REPL limit);
+     * use [runModule] for those.
+     */
     @JvmStatic
     fun runFile(code: String): String {
-        val session = ReplSession()
-        return session.execute(code)
+        return ReplSession().execute(code)
+    }
+
+    /**
+     * SQL dry-run mode: treat the user's source as Rell module `main` (root),
+     * load it (DDL flows through [CapturingSqlManager] → SQL pane), and invoke
+     * `query main()` if defined. Modules can declare entities/queries/etc.
+     * The browser has no Postgres so execution still fails with "no_sql", but
+     * the SQL postchain *would* issue is surfaced to the SQL pane.
+     */
+    @JvmStatic
+    fun runModule(code: String): String {
+        return ModuleSession(code).runMain()
     }
 
     /** Returns a session id, or `-1` if the REPL failed to initialise. */

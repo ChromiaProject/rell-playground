@@ -15,7 +15,17 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: none
-  GRADLE_OPTS: "-Xmx4g"
+  # Force Gradle's build cache (task output reuse) + configuration cache so
+  # incremental work survives across CI invocations. -Dorg.gradle.caching=true
+  # is the same as passing --build-cache on every invocation; keeping it in
+  # GRADLE_OPTS means we don't have to remember to add it to each ./gradlew.
+  # parallel=true is safe in CI since every job has its own runner.
+  GRADLE_OPTS: "-Xmx4g -Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.configuration-cache=true"
+  # Pin Gradle's HOME under the project dir so it's reachable by cache:paths
+  # (GitLab cache entries must live inside $CI_PROJECT_DIR). Everything
+  # Gradle would normally write to ~/.gradle (downloaded distributions,
+  # dependency cache, build-cache-1) lands here instead.
+  GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle-user-home"
   # Shadow JAR for CheerpJ; the SPA build picks it up from web/public/jvm/.
   BRIDGE_JAR: "web/public/jvm/rell-playground-bridge-all.jar"
   JAVA_IMAGE: "eclipse-temurin:21-jdk"
@@ -42,14 +52,29 @@ rell-java17:
         - gradle.properties
         - gradlew
   cache:
+    # Gradle caches: kept under $GRADLE_USER_HOME so a single tree captures
+    # both this project's deps AND the Rell-source checkout's deps (the
+    # build-rell-java17.sh ./gradlew calls share the same GRADLE_USER_HOME
+    # via the env var). Build-cache-1 lives here too thanks to
+    # org.gradle.caching=true above.
+    - key: gradle-home-${CI_COMMIT_REF_SLUG}
+      paths:
+        - .gradle-user-home/caches/
+        - .gradle-user-home/wrapper/
+        - .gradle-user-home/notifications/
+    # Project-local configuration cache (Gradle 8.x) — keyed per branch +
+    # gradle version so a Gradle bump auto-invalidates.
+    - key: gradle-project-${CI_COMMIT_REF_SLUG}
+      paths:
+        - .gradle/
+        - .rell-src/.gradle/
+    # Local Maven repo holding the Java-17-rebuilt Rell artifacts.
+    - key: rell-maven-${CI_COMMIT_REF_SLUG}
+      paths:
+        - ${RELL_M2}/
     # `web/public/jvm/` is also cached here so subsequent skipped runs of
     # rell-java17 leave the SPA bridge JAR sitting on the runner for the
     # `build` job to pick up.
-    - key: rell-java17-${CI_COMMIT_REF_SLUG}
-      paths:
-        - .gradle/caches/
-        - .gradle/wrapper/
-        - ${RELL_M2}/
     - key: bridge-jar-${CI_COMMIT_REF_SLUG}
       paths:
         - web/public/jvm/

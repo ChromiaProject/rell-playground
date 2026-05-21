@@ -5,7 +5,7 @@
 // One persistent session per mode lifecycle; switching tabs disposes
 // the session and creates a new one when REPL mode is re-entered.
 
-import type { BridgeClient } from "../bridge/client.ts";
+import type { BridgeClient, StreamEvent } from "../bridge/client.ts";
 import type { EditorHandle } from "../editor/editor.ts";
 import type { OutputPanel } from "../output.ts";
 
@@ -21,12 +21,14 @@ export function createReplMode(
   editor: EditorHandle,
   output: OutputPanel,
   setBusy: (busy: boolean) => void,
+  onEvent: (e: StreamEvent) => void,
+  clearPanels: () => void,
 ): ReplMode {
   let sessionId: number | null = null;
 
   async function ensureSession(): Promise<number> {
     if (sessionId !== null) return sessionId;
-    const id = await bridge.replCreate((e) => output.appendEvent(e));
+    const id = await bridge.replCreate(onEvent);
     sessionId = id;
     output.appendLine(`REPL session #${id} ready.`, "system");
     return id;
@@ -34,7 +36,7 @@ export function createReplMode(
 
   return {
     async enter() {
-      output.clear();
+      clearPanels();
       output.appendLine("Starting REPL...", "system");
       setBusy(true);
       try {
@@ -55,7 +57,7 @@ export function createReplMode(
       const id = await ensureSession();
       setBusy(true);
       try {
-        await bridge.replExecute(id, code, (e) => output.appendEvent(e));
+        await bridge.replExecute(id, code, onEvent);
       } finally {
         setBusy(false);
       }
@@ -66,7 +68,7 @@ export function createReplMode(
       output.appendLine(command, "input");
       setBusy(true);
       try {
-        await bridge.replExecute(id, command, (e) => output.appendEvent(e));
+        await bridge.replExecute(id, command, onEvent);
       } finally {
         setBusy(false);
       }
