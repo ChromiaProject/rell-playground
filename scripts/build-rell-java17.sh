@@ -17,7 +17,11 @@ REPO="${RELL_REPO_URL:-https://gitlab.com/chromaway/rell.git}"
 TAG="${RELL_TAG:-0.15.4}"
 WORK="${RELL_WORK_DIR:-${RUNNER_TEMP:-/tmp}/rell-${TAG}}"
 
-if [[ ! -d "${WORK}" ]]; then
+# Guard on the build script, not just the directory: CI caches may recreate
+# ${WORK} (e.g. a cached ${WORK}/.gradle/) without the actual checkout, which
+# would make a bare `-d` test skip the clone and leave no sources.
+if [[ ! -f "${WORK}/build.gradle.kts" ]]; then
+  rm -rf "${WORK}"
   git clone --depth 1 --branch "${TAG}" "${REPO}" "${WORK}"
 fi
 

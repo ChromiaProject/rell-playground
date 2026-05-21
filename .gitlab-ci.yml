@@ -54,12 +54,14 @@ rell-java17:
         - .gradle-user-home/caches/
         - .gradle-user-home/wrapper/
         - .gradle-user-home/notifications/
-    # Project-local configuration cache (Gradle 8.x) — keyed per branch +
-    # gradle version so a Gradle bump auto-invalidates.
+    # Project-local configuration cache (Gradle 8.x). Only this project's
+    # .gradle/ — NOT .rell-src/.gradle/, since caching that recreates the
+    # .rell-src/ dir on a fresh runner and tricks build-rell-java17.sh into
+    # skipping the clone (the heavy Rell deps are already in the gradle-home
+    # cache anyway).
     - key: gradle-project-${CI_COMMIT_REF_SLUG}
       paths:
         - .gradle/
-        - .rell-src/.gradle/
     # Local Maven repo holding the Java-17-rebuilt Rell artifacts.
     - key: rell-maven-${CI_COMMIT_REF_SLUG}
       paths:
