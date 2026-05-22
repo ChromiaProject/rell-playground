@@ -11,7 +11,7 @@ description =
 
 kotlin {
     // CheerpJ 4.x supports JREs 8/11/17 only. Build at Java 17 — matches the
-    // downgraded Rell artifacts (see .gitlab-ci.yml `rell-java17` job).
+    // downgraded Rell artifacts (see .github/workflows/ci.yml `rell-java17` job).
     compilerOptions.jvmTarget = JvmTarget.JVM_17
     compilerOptions.optIn.add("net.postchain.rell.api.base.InternalRellApi")
 }

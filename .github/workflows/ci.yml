@@ -1,0 +1,139 @@
+# CI for rell-playground — migrated from .gitlab-ci.yml.
+#
+# Three jobs, same shape as the old GitLab pipeline:
+#  - rell-java17: clones Rell at the pinned tag, re-targets it to Java 17
+#                 bytecode (CheerpJ caps at JRE 17), publishes the modules the
+#                 bridge depends on into the local Maven repo, and builds the
+#                 bridge shadow JAR (+ gzip) ready for the SPA.
+#  - build:       Bun-based SPA build that consumes the shadow JAR artifact.
+#  - deploy:      publishes web/dist/ to GitHub Pages on the default branch.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One in-flight run per ref; a newer push cancels the older one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Same Gradle tuning as the old pipeline. -Dorg.gradle.caching=true is the
+  # equivalent of --build-cache on every invocation.
+  GRADLE_OPTS: "-Xmx4g -Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.configuration-cache=true"
+  BRIDGE_JAR: "web/public/jvm/rell-playground-bridge-all.jar"
+  RELL_REPO_URL: "https://gitlab.com/chromaway/rell.git"
+  RELL_TAG: "0.15.4"
+
+jobs:
+  rell-java17:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # JDK 21: build-rell-java17.sh sets org.gradle.java.installations.fromEnv
+      # = JAVA_HOME and the bridge toolchain pins language version 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Gradle wrapper + dependency/build/configuration caches. Keyed on
+      # gradle files; restores across runs so a no-op build is fast.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The Java-17-rebuilt Rell artifacts published into mavenLocal. Cached
+      # separately so an unchanged Rell tag skips the heavy clone + publish.
+      - name: Cache Java-17 Rell Maven artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: rell-maven-${{ env.RELL_TAG }}-${{ hashFiles('scripts/build-rell-java17.sh') }}
+          restore-keys: |
+            rell-maven-${{ env.RELL_TAG }}-
+
+      - name: Build Java-17 Rell modules + bridge shadow JAR
+        run: |
+          # 1. Build + publish the Java 17 Rell modules into mavenLocal.
+          bash scripts/build-rell-java17.sh
+          # 2. Build the bridge shadow JAR + gzip pass against the just-published
+          #    artifacts (settings.gradle.kts has mavenLocal() in repositories).
+          ./gradlew :bridge:build
+          test -f "${BRIDGE_JAR}"    || { echo "shadow JAR missing at ${BRIDGE_JAR}";    exit 1; }
+          test -f "${BRIDGE_JAR}.gz" || { echo "gzipped JAR missing at ${BRIDGE_JAR}.gz"; exit 1; }
+
+      # Ship the whole jvm/ folder — the SPA build copies web/public/ verbatim
+      # into web/dist/ and the worker fetches /jvm/…jar.gz, so the .gz must
+      # survive the handoff to the build job.
+      - name: Upload bridge JVM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridge-jvm
+          path: web/public/jvm/
+          retention-days: 7
+
+  build:
+    needs: rell-java17
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pull the shadow JAR (+ .gz) produced by rell-java17 back into place.
+      - name: Download bridge JVM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-jvm
+          path: web/public/jvm/
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Build SPA
+        working-directory: web
+        run: |
+          test -f "../${BRIDGE_JAR}.gz" || { echo "Expected ${BRIDGE_JAR}.gz from the rell-java17 artifact"; exit 1; }
+          bun install --frozen-lockfile
+          bun run build
+
+      - name: Upload SPA dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: spa-dist
+          path: web/dist/
+          retention-days: 7
+
+  deploy:
+    needs: build
+    # Pages only on the default branch — mirrors the old `pages` rule.
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download SPA dist
+        uses: actions/download-artifact@v4
+        with:
+          name: spa-dist
+          path: dist
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

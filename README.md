@@ -1,6 +1,8 @@
 # rell-playground
 
 Backend-less SPA for trying [Rell](https://rell.chromia.com) in the browser.
+**Live:** <https://chromiaproject.github.io/rell-playground/>
+
 Three modes:
 
 - Run — paste a complete program, click Run. For pure functions, `print`,
@@ -106,9 +108,22 @@ uncompressed so the outer `gzip -9` pass collapses cross-entry redundancy.
 The worker fetches `.jar.gz`, decodes with `DecompressionStream("gzip")`, and
 mounts the bytes into CheerpJ's `/str/` virtual filesystem.
 
-The first Gradle build downloads non-Rell deps from the GitLab Maven repos
-configured in `settings.gradle.kts`. CI passes `gitlabAuthHeaderValue` for
-authenticated access.
+The first Gradle build downloads non-Rell deps from the public GitLab Maven
+repos configured in `settings.gradle.kts`; these resolve anonymously, so no
+credentials are needed in CI or locally.
+
+## CI / deployment
+
+`.github/workflows/ci.yml` runs the three build stages above as separate jobs:
+
+- **rell-java17** — JDK 21; runs `build-rell-java17.sh`, builds the bridge
+  shadow JAR + `.gz`, uploads `web/public/jvm/` as an artifact. The Java-17
+  Rell artifacts in `~/.m2` are cached, keyed on the Rell tag + the build
+  script, so an unchanged tag skips the heavy clone + republish.
+- **build** — Bun; downloads the JVM artifact and builds the SPA into
+  `web/dist/`.
+- **deploy** — on `master`, publishes `web/dist/` to GitHub Pages at the live
+  URL above.
 
 ### Self-hosting CheerpJ (optional)
 

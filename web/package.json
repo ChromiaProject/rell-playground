@@ -1,7 +1,7 @@
 {
   "name": "rell-playground-web",
   "version": "0.1.0",
-  "description": "Single-page Rell playground. Runs the TeaVM-compiled bridge in a Web Worker; vanilla TS + Monaco editor.",
+  "description": "Single-page Rell playground. Runs the Java-17 Rell bridge JAR under CheerpJ in a Web Worker; vanilla TS + Monaco editor.",
   "private": true,
   "type": "module",
   "scripts": {

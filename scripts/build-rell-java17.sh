@@ -4,8 +4,8 @@
 # JRE 17, so we re-target Rell's published bytecode (Java 21) down to 17.
 #
 # Used by:
-#   - .gitlab-ci.yml (`rell-java17` job) — the resulting fat JAR is the
-#     pipeline artifact handed to the `build` job.
+#   - .github/workflows/ci.yml (`rell-java17` job) — the resulting fat JAR is
+#     the pipeline artifact handed to the `build` job.
 #   - local dev: run once after a clean checkout if you can't / don't want to
 #     consume the GitLab artifact.
 #

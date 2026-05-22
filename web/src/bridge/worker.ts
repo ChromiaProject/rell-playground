@@ -54,7 +54,10 @@ const CHEERPJ_LOADER = "https://cjrtnc.leaningtech.com/4.2/loader.js";
 // and mounts the resulting Uint8Array into CheerpJ's /str/ virtual filesystem.
 // Brotli would compress further (~14 MB) but DecompressionStream("br") isn't
 // universally supported in browsers yet.
-const BRIDGE_JAR_GZ_URL = "/jvm/rell-playground-bridge-all.jar.gz";
+const BRIDGE_JAR_GZ_URL = new URL(
+  "../jvm/rell-playground-bridge-all.jar.gz",
+  self.location.href,
+).href;
 const BRIDGE_JAR = "/str/rell-playground-bridge.jar";
 
 function post(event: WorkerEvent): void {
