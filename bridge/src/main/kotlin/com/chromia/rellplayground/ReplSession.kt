@@ -19,6 +19,17 @@ import net.postchain.rell.base.runtime.Rt_ModuleArgsSource
  */
 class ReplSession {
     private val channel = BufferedReplChannel()
+
+    /**
+     * Result of [ReplInterpreter.create] plus the events the create-probe captured. The probe
+     * runs `executeCode("", true)` to confirm the engine is usable; on the TeaVM build, that
+     * probe trips lazy static-init of jOOQ / Jackson / kotlin-reflect the first time a
+     * brand-new JVM-in-JS instance touches them, so it fails non-deterministically once per
+     * worker, then never again. We retry the probe up to three times before giving up — and
+     * if every attempt fails, we preserve the events from the *last* attempt so
+     * [execute] can replay them instead of swallowing them behind an opaque
+     * "REPL failed to initialise" error.
+     */
     private val interpreter: ReplInterpreter? = run {
         val compilerOptions = C_CompilerOptions.DEFAULT
         val globalCtx = RellApiBaseUtils.createGlobalContext(
@@ -41,7 +52,13 @@ class ReplSession {
             outChannel = channel,
             moduleArgsSource = Rt_ModuleArgsSource.NULL,
         )
-        ReplInterpreter.create(config)
+        var result: ReplInterpreter? = null
+        repeat(3) {
+            channel.reset()
+            result = ReplInterpreter.create(config)
+            if (result != null) return@run result
+        }
+        result // null — channel still holds the last attempt's events
     }
 
     val ready: Boolean get() = interpreter != null
@@ -49,9 +66,10 @@ class ReplSession {
     /** Run one command; returns the JSON-encoded events captured for it. */
     fun execute(command: String): String {
         if (interpreter == null) {
-            return BufferedReplChannel().apply {
-                printCompilerError("repl:not_ready", "REPL failed to initialise")
-            }.finish(ok = false)
+            // Replay the events captured during the failed init probe so the caller sees the
+            // real underlying exception (or compiler error), not just "repl:not_ready".
+            channel.printCompilerError("repl:not_ready", "REPL failed to initialise")
+            return channel.finish(ok = false)
         }
         channel.reset()
         return try {

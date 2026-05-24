@@ -61,20 +61,21 @@ query main() {
 `;
 
 export async function mountEditor(container: HTMLElement, initial?: string): Promise<EditorHandle> {
-  // Web-worker URLs for Monaco's language services. Monaco needs to know
-  // where its workers live; we point at the JSON/CSS/etc workers shipped
-  // by the monaco-editor package and bundled into ./public/monaco-workers
-  // by scripts/build.ts.
-  (self as unknown as { MonacoEnvironment?: { getWorkerUrl(_: string, label: string): string } }).MonacoEnvironment = {
-    getWorkerUrl(_moduleId: string, label: string) {
-      const map: Record<string, string> = {
-        json: "./monaco-workers/json.worker.js",
-        css: "./monaco-workers/css.worker.js",
-        html: "./monaco-workers/html.worker.js",
-        typescript: "./monaco-workers/ts.worker.js",
-        javascript: "./monaco-workers/ts.worker.js",
-      };
-      return map[label] ?? "./monaco-workers/editor.worker.js";
+  // Vite-native Monaco workers: each `?worker` import bundles the matching language service
+  // as a separate ESM worker chunk. Monaco picks one via the `label` from the language id.
+  const editorWorker = (await import("monaco-editor/esm/vs/editor/editor.worker.js?worker")).default;
+  const jsonWorker = (await import("monaco-editor/esm/vs/language/json/json.worker.js?worker")).default;
+  const cssWorker = (await import("monaco-editor/esm/vs/language/css/css.worker.js?worker")).default;
+  const htmlWorker = (await import("monaco-editor/esm/vs/language/html/html.worker.js?worker")).default;
+  const tsWorker = (await import("monaco-editor/esm/vs/language/typescript/ts.worker.js?worker")).default;
+
+  (self as unknown as { MonacoEnvironment?: { getWorker(moduleId: string, label: string): Worker } }).MonacoEnvironment = {
+    getWorker(_moduleId: string, label: string): Worker {
+      if (label === "json") return new jsonWorker();
+      if (label === "css" || label === "scss" || label === "less") return new cssWorker();
+      if (label === "html" || label === "handlebars" || label === "razor") return new htmlWorker();
+      if (label === "typescript" || label === "javascript") return new tsWorker();
+      return new editorWorker();
     },
   };
 

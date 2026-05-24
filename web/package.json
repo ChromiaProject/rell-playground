@@ -1,19 +1,23 @@
 {
   "name": "rell-playground-web",
   "version": "0.1.0",
-  "description": "Single-page Rell playground. Runs the Java-17 Rell bridge JAR under CheerpJ in a Web Worker; vanilla TS + Monaco editor.",
+  "description": "Single-page Rell playground. Runs the TeaVM-compiled bridge JS module in a Web Worker; vanilla TS + Monaco editor.",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run scripts/dev.ts",
-    "build": "bun run scripts/build.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --max-old-space-size=8192 node_modules/vitest/vitest.mjs run --reporter=verbose"
   },
   "dependencies": {
     "monaco-editor": "0.52.0"
   },
   "devDependencies": {
-    "@types/bun": "1.1.13",
-    "typescript": "5.6.3"
+    "@types/node": "22.18.0",
+    "typescript": "5.6.3",
+    "vite": "8.0.14",
+    "vitest": "3.2.4"
   }
 }

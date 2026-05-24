@@ -36,11 +36,10 @@ export function createBridgeClient(workerUrl: URL): BridgeClient {
   let pending = new Map<number, Pending>();
 
   function spawn(url: URL): Worker {
-    // Classic worker (not module): CheerpJ's loader uses self.importScripts
-    // and dynamic import() with paths relative to the worker base URL, which
-    // requires a classic script. worker.ts has only `import type` imports,
-    // so the transpiled output is import-free.
-    const w = new Worker(url, { type: "classic" });
+    // ESM worker — Vite bundles `worker.ts` as an ES module so the TeaVM-generated bridge
+    // can be loaded via top-level `import` rather than `self.importScripts`. The dev server
+    // injects HMR glue into the module shape; the prod build outputs a hashed `.js`.
+    const w = new Worker(url, { type: "module" });
     w.onmessage = (ev: MessageEvent<WorkerEvent>) => {
       const e = ev.data;
       const p = pending.get(e.requestId);
