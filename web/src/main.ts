@@ -1,5 +1,10 @@
 // SPA entry. Wires the editor, output panel, mode switch, and worker bridge.
 
+// Vite worker query: this static import resolves to the worker's bundled URL (dev: the
+// transpiled source; prod: the hashed asset). Strapping the URL onto a `Worker` is
+// Vite's recommended ESM-friendly shape — it survives the prod hashing pass without us
+// having to hand-roll `new URL("./worker.js", import.meta.url)` glue.
+import workerUrl from "./bridge/worker.ts?worker&url";
 import { createBridgeClient } from "./bridge/client.ts";
 import { mountEditor, DEFAULT_FILE, SQL_EXAMPLE } from "./editor/editor.ts";
 import { OutputPanel } from "./output.ts";
@@ -56,11 +61,7 @@ async function main(): Promise<void> {
   tabOutput.addEventListener("click", () => setTab("output"));
   tabSql.addEventListener("click", () => setTab("sql"));
 
-  // Worker is emitted alongside main.[hash].js as ./worker.js (no hash) by
-  // build.ts; dev.ts intercepts the same path and transpiles src/bridge/worker.ts
-  // on demand. Either way `./worker.js` resolves relative to the bundle URL.
-  const workerUrl = new URL("./worker.js", import.meta.url);
-  const bridge = createBridgeClient(workerUrl);
+  const bridge = createBridgeClient(new URL(workerUrl, import.meta.url));
 
   // Tracked so route() can reveal the Output tab if a SQL dry-run hits a
   // real diagnostic (compile error / non-trivial runtime error) — see below.

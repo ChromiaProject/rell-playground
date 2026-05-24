@@ -54,11 +54,6 @@ private class CapturingSqlExecutor(private val channel: BufferedReplChannel) : S
         channel.appendSql(sql)
     }
 
-    override fun executeUpdate(sql: String, preparator: SqlPreparator): Int {
-        channel.appendSql(sql)
-        return 0
-    }
-
     override fun executeQuery(sql: String, preparator: SqlPreparator, consumer: (ResultSetRow) -> Unit) {
         channel.appendSql(sql)
         // Empty result set: invoke the consumer zero times.

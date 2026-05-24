@@ -6,19 +6,14 @@ build/
 *.iml
 local.properties
 
-# Node / Bun
+# Node / pnpm
 node_modules/
 **/node_modules/
-bun.lockb
+.pnpm-store/
 web/dist/
 
-# Generated shadow JAR (mirrored into web/public; reproducible from Gradle)
-web/public/jvm/
-# Vendored CheerpJ runtime (large, fetched in CI)
-web/public/cheerpj/
-# Rell source checkout + job-local Maven repo from scripts/build-rell-java17.sh
-.rell-src/
-.m2-rell-java17/
+# TeaVM-generated JS mirrored from :bridge:copyTeavmToWeb; reproducible from Gradle.
+web/public/teavm/
 
 # OS
 .DS_Store

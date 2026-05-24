@@ -7,7 +7,7 @@ package com.chromia.rellplayground
 import net.postchain.rell.api.base.RellApiBaseUtils
 import net.postchain.rell.base.compiler.base.core.C_CompilerOptions
 import net.postchain.rell.base.compiler.base.utils.C_SourceDir
-import net.postchain.rell.base.model.R_ModuleName
+import net.postchain.rell.base.model.ModuleName
 import net.postchain.rell.base.repl.NullReplInterpreterProjExt
 import net.postchain.rell.base.repl.ReplInterpreter
 import net.postchain.rell.base.repl.ReplInterpreterConfig
@@ -34,8 +34,11 @@ class ModuleSession(userCode: String) {
     // `main.rell` at the source-dir root maps to the EMPTY/root module,
     // *not* a module literally named "main". (Path-to-module follows the
     // dir layout: foo/bar.rell -> module foo.bar, main.rell -> root.)
-    private val mainModule: R_ModuleName = R_ModuleName.EMPTY
+    private val mainModule: ModuleName = ModuleName.EMPTY
 
+    // Retry the create-probe up to three times before giving up: the first JVM-in-JS touch of
+    // jOOQ / Jackson / kotlin-reflect lazy-init can throw once and then never again. See
+    // [ReplSession] for the same workaround on REPL mode.
     private val interpreter: ReplInterpreter? = run {
         val compilerOptions = C_CompilerOptions.DEFAULT
         val globalCtx = RellApiBaseUtils.createGlobalContext(
@@ -54,7 +57,13 @@ class ModuleSession(userCode: String) {
             outChannel = channel,
             moduleArgsSource = Rt_ModuleArgsSource.NULL,
         )
-        ReplInterpreter.create(config)
+        var result: ReplInterpreter? = null
+        repeat(3) {
+            channel.reset()
+            result = ReplInterpreter.create(config)
+            if (result != null) return@run result
+        }
+        result
     }
 
     /**

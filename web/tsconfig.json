@@ -16,7 +16,7 @@
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["bun"]
+    "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*", "scripts/**/*"]
+  "include": ["src/**/*", "test/**/*", "vite.config.ts"]
 }

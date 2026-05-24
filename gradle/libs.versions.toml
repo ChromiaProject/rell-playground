@@ -1,7 +1,8 @@
 [versions]
 kotlin = "2.3.0"
-rell = "0.15.4"
-shadow = "9.4.0"
+rell = "0.16.0-SNAPSHOT"
+teavm = "0.12.0"
+node-gradle = "7.1.0"
 
 [libraries]
 rell-tools = { module = "net.postchain.rell:rell-tools", version.ref = "rell" }
@@ -10,7 +11,11 @@ rell-api-base = { module = "net.postchain.rell:rell-api-base", version.ref = "re
 rell-api-gtx = { module = "net.postchain.rell:rell-api-gtx", version.ref = "rell" }
 rell-base = { module = "net.postchain.rell:rell-base", version.ref = "rell" }
 rell-gtx = { module = "net.postchain.rell:rell-gtx", version.ref = "rell" }
+teavm-jso = { module = "org.teavm:teavm-jso", version.ref = "teavm" }
+teavm-jso-apis = { module = "org.teavm:teavm-jso-apis", version.ref = "teavm" }
+teavm-core = { module = "org.teavm:teavm-core", version.ref = "teavm" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+teavm = { id = "org.teavm", version.ref = "teavm" }
+node-gradle = { id = "com.github.node-gradle.node", version.ref = "node-gradle" }

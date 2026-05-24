@@ -1,12 +1,12 @@
-# CI for rell-playground — migrated from .gitlab-ci.yml.
+# CI for rell-playground.
 #
-# Three jobs, same shape as the old GitLab pipeline:
-#  - rell-java17: clones Rell at the pinned tag, re-targets it to Java 17
-#                 bytecode (CheerpJ caps at JRE 17), publishes the modules the
-#                 bridge depends on into the local Maven repo, and builds the
-#                 bridge shadow JAR (+ gzip) ready for the SPA.
-#  - build:       Bun-based SPA build that consumes the shadow JAR artifact.
-#  - deploy:      publishes web/dist/ to GitHub Pages on the default branch.
+# Three jobs:
+#  - bridge:   compiles the Kotlin/JVM bridge through TeaVM, producing the JS module the SPA
+#              worker imports. Resolves rell3 artifacts from the upstream GitLab Maven repo
+#              configured in settings.gradle.kts — no sibling checkout / mavenLocal publish.
+#  - build:    Node/Vite build of the SPA, consuming the bridge JS output. Also runs the
+#              Vitest survival kit against the bridge.
+#  - deploy:   publishes web/dist/ to GitHub Pages on master.
 
 name: CI
 
@@ -25,84 +25,61 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Same Gradle tuning as the old pipeline. -Dorg.gradle.caching=true is the
-  # equivalent of --build-cache on every invocation.
-  GRADLE_OPTS: "-Xmx4g -Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.configuration-cache=true"
-  BRIDGE_JAR: "web/public/jvm/rell-playground-bridge-all.jar"
-  RELL_REPO_URL: "https://gitlab.com/chromaway/rell.git"
-  RELL_TAG: "0.15.4"
+  GRADLE_OPTS: "-Xmx4g -Dorg.gradle.caching=true -Dorg.gradle.parallel=true"
 
 jobs:
-  rell-java17:
+  bridge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # JDK 21: build-rell-java17.sh sets org.gradle.java.installations.fromEnv
-      # = JAVA_HOME and the bridge toolchain pins language version 21.
+      # Java 21 — TeaVM's tooling requires 21 (its ASM cannot read class files compiled with
+      # Java 25's bytecode).
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
 
-      # Gradle wrapper + dependency/build/configuration caches. Keyed on
-      # gradle files; restores across runs so a no-op build is fast.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # The Java-17-rebuilt Rell artifacts published into mavenLocal. Cached
-      # separately so an unchanged Rell tag skips the heavy clone + publish.
-      - name: Cache Java-17 Rell Maven artifacts
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: rell-maven-${{ env.RELL_TAG }}-${{ hashFiles('scripts/build-rell-java17.sh') }}
-          restore-keys: |
-            rell-maven-${{ env.RELL_TAG }}-
+      - name: Build bridge JS (TeaVM)
+        run: ./gradlew :bridge:build
 
-      - name: Build Java-17 Rell modules + bridge shadow JAR
-        run: |
-          # 1. Build + publish the Java 17 Rell modules into mavenLocal.
-          bash scripts/build-rell-java17.sh
-          # 2. Build the bridge shadow JAR + gzip pass against the just-published
-          #    artifacts (settings.gradle.kts has mavenLocal() in repositories).
-          ./gradlew :bridge:build
-          test -f "${BRIDGE_JAR}"    || { echo "shadow JAR missing at ${BRIDGE_JAR}";    exit 1; }
-          test -f "${BRIDGE_JAR}.gz" || { echo "gzipped JAR missing at ${BRIDGE_JAR}.gz"; exit 1; }
-
-      # Ship the whole jvm/ folder — the SPA build copies web/public/ verbatim
-      # into web/dist/ and the worker fetches /jvm/…jar.gz, so the .gz must
-      # survive the handoff to the build job.
-      - name: Upload bridge JVM artifact
+      - name: Upload bridge JS
         uses: actions/upload-artifact@v4
         with:
-          name: bridge-jvm
-          path: web/public/jvm/
+          name: bridge-js
+          path: web/public/teavm/
           retention-days: 7
 
   build:
-    needs: rell-java17
+    needs: bridge
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Pull the shadow JAR (+ .gz) produced by rell-java17 back into place.
-      - name: Download bridge JVM artifact
+      - name: Download bridge JS
         uses: actions/download-artifact@v4
         with:
-          name: bridge-jvm
-          path: web/public/jvm/
+          name: bridge-js
+          path: web/public/teavm/
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v4
         with:
-          bun-version: latest
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # node-gradle plugin downloads its pinned Node version into web/build/nodejs, so no
+      # actions/setup-node step is needed. We just need a JDK to drive Gradle.
+      - name: Run survival kit (Vitest)
+        run: ./gradlew :web:vitestRun
 
       - name: Build SPA
-        working-directory: web
-        run: |
-          test -f "../${BRIDGE_JAR}.gz" || { echo "Expected ${BRIDGE_JAR}.gz from the rell-java17 artifact"; exit 1; }
-          bun install --frozen-lockfile
-          bun run build
+        run: ./gradlew :web:assemble
 
       - name: Upload SPA dist
         uses: actions/upload-artifact@v4
@@ -113,7 +90,6 @@ jobs:
 
   deploy:
     needs: build
-    # Pages only on the default branch — mirrors the old `pages` rule.
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
