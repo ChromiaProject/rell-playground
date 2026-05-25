@@ -132,7 +132,30 @@ async function main(): Promise<void> {
 
   progress.show("Loading Rell runtime…");
   output.appendLine("Loading Rell runtime...", "system");
-  await bridge.init(route);
+  // Safari/WebKit silently stalls compiling the multi-MB TeaVM bridge module
+  // (no error, no timeout, no console output). Race init against a wall-clock
+  // budget so users on broken browsers get told instead of staring forever.
+  const INIT_TIMEOUT_MS = 20_000;
+  const initTimeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("init-timeout")), INIT_TIMEOUT_MS),
+  );
+  try {
+    await Promise.race([bridge.init(route), initTimeout]);
+  } catch (e) {
+    progress.hide();
+    if (e instanceof Error && e.message === "init-timeout") {
+      output.appendLine(
+        "Could not load the Rell runtime — your browser hung while compiling it.",
+        "error",
+      );
+      output.appendLine(
+        "Safari is known to stall on the bridge module. Please try Chrome or Firefox.",
+        "error",
+      );
+      return;
+    }
+    throw e;
+  }
   progress.hide();
   const version = await bridge.version();
   // Full string is something like:

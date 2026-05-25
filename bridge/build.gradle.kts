@@ -556,8 +556,13 @@ teavm {
         // converge without thrashing GC.
         outOfProcess = true
         processMemory = 8192
-        sourceMap = true
-        obfuscated = false
+        // Obfuscation halves the minified size — critical for Safari, whose WebKit parser
+        // silently stalls compiling our ~90 MB unminified bridge module inside a worker.
+        // Variable-name shortening is the cheapest win we have.
+        obfuscated = true
+        // Sourcemap is a ~50 MB sibling we don't need in production. Keep it off; the stack
+        // traces TeaVM emits already carry Kotlin file/line via @SourceFile attributes.
+        sourceMap = false
         targetFileName = "rell-playground-bridge.js"
     }
 }
