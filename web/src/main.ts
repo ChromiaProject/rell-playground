@@ -19,6 +19,20 @@ type Mode = "file" | "sql" | "repl";
 
 type Theme = "light" | "dark";
 const THEME_STORAGE_KEY = "rell-playground:theme";
+const MODE_STORAGE_KEY = "rell-playground:mode";
+
+function readSavedMode(): Mode | null {
+  try {
+    const v = localStorage.getItem(MODE_STORAGE_KEY);
+    return v === "file" || v === "sql" || v === "repl" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveMode(mode: Mode): void {
+  try { localStorage.setItem(MODE_STORAGE_KEY, mode); } catch { /* private mode */ }
+}
 
 function readTheme(): Theme {
   const attr = document.documentElement.getAttribute("data-theme");
@@ -231,6 +245,7 @@ async function main(): Promise<void> {
     if (mode === "repl") await replMode.leave();
     mode = next;
     currentMode = next;
+    saveMode(mode);
     // Mode switches reset both panes: a REPL transcript / dry-run SQL is
     // meaningless after toggling. Keeps the user from staring at stale output.
     clearPanels();
@@ -299,6 +314,14 @@ async function main(): Promise<void> {
   });
 
   editor.focus();
+
+  // Restore last-used mode from localStorage. We defer this until after bridge.init()
+  // succeeded so REPL's `enter()` (which calls replCreate on the worker) has something
+  // to talk to. setMode is a no-op when the saved mode equals the current default.
+  const saved = readSavedMode();
+  if (saved !== null && saved !== mode) {
+    void setMode(saved);
+  }
 }
 
 void main().catch((e) => {
