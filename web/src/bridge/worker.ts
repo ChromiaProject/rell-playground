@@ -25,7 +25,16 @@ type TeaVMBridge = {
 // *before* `/* @vite-ignore */` is honoured) can't see the literal path. The dynamic
 // `import(<variable>)` falls through to the browser's native ESM loader, which fetches
 // the file straight from /public without going through Vite's transform pipeline.
-const bridgeUrl = new URL("/teavm/rell-playground-bridge.js", self.location.href).href;
+//
+// Dev (`vite dev`) serves the worker source from `/src/bridge/worker.ts` and `/teavm/...`
+// from the public directory at origin root. Prod serves the worker from
+// `<base>assets/worker.<hash>.js`, so the bridge lives at `../teavm/...` relative to it
+// — using an absolute `/teavm/...` would escape the GitHub Pages sub-path
+// (`/rell-playground/`) and land at the wrong origin path.
+const bridgeUrl = new URL(
+    import.meta.env.DEV ? "/teavm/rell-playground-bridge.js" : "../teavm/rell-playground-bridge.js",
+    self.location.href,
+).href;
 const bridgeReady: Promise<TeaVMBridge> = import(/* @vite-ignore */ bridgeUrl);
 
 type ReplEvent =
