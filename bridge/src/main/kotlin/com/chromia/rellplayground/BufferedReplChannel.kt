@@ -54,7 +54,7 @@ class BufferedReplChannel : ReplOutputChannel {
 
     override fun printRuntimeError(e: Rt_Exception) {
         val stack = e.info.stack.joinToString("\n") { it.toString() }
-        appendEvent("runtimeError", "message" to (e.message ?: "runtime error"), "stack" to stack)
+        appendEvent("runtimeError", "message" to e.message, "stack" to stack)
     }
 
     override fun printPlatformRuntimeError(e: Throwable) {

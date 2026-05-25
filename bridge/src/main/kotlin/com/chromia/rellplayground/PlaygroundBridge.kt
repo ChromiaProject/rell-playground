@@ -27,7 +27,7 @@ object PlaygroundBridge {
 
     @JvmStatic
     fun version(): String {
-        return Rt_RellVersion.getInstance()?.buildDescriptor ?: "rell (unknown version)"
+        return Rt_RellVersion.getInstance().buildDescriptor
     }
 
     /**
