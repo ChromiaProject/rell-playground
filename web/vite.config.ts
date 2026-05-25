@@ -35,13 +35,15 @@ export default defineConfig({
     },
   },
   // Monaco's web workers and our bridge worker both get the standard ?worker treatment.
+  // Hashed entry filenames are critical: GitHub Pages serves these JS files with a long
+  // cache-control, so a stable name across deploys means browsers keep using an outdated
+  // worker bundle (e.g. an old CheerpJ-era classic worker that called `importScripts`,
+  // which crashes after we switched to type:module). The hash forces cache-bust.
   worker: {
     format: "es",
     rollupOptions: {
       output: {
-        // Stable worker name (no hash) so main.ts's `new URL("./worker.js", import.meta.url)`
-        // path resolves correctly in prod.
-        entryFileNames: "assets/[name].js",
+        entryFileNames: "assets/[name].[hash].js",
         chunkFileNames: "assets/[name].[hash].js",
         assetFileNames: "assets/[name].[hash][extname]",
       },
