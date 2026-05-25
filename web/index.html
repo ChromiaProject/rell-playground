@@ -6,10 +6,25 @@
     <title>Rell Playground</title>
     <link rel="stylesheet" href="./src/styles.css" />
     <link rel="icon" type="image/png" href="./favicon.png" />
+    <!-- Set data-theme before any CSS/module loads so the first paint already
+         has the right palette. Persisted choice wins; otherwise prefers-color-scheme. -->
+    <script>
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem("rell-playground:theme"); } catch (e) {}
+        var theme = saved === "light" || saved === "dark"
+          ? saved
+          : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">Rell Playground</div>
+      <div class="brand">
+        <span class="brand-name">Rell</span>
+        <span class="brand-suffix">Playground</span>
+      </div>
       <nav class="mode-switch" role="tablist" aria-label="Mode">
         <button type="button" data-mode="file" role="tab" aria-selected="true">Run</button>
         <button type="button" data-mode="sql" role="tab" aria-selected="false">SQL dry-run</button>
@@ -19,6 +34,7 @@
         <button type="button" id="run-btn" class="primary">Run ▶</button>
         <button type="button" id="stop-btn" disabled>Stop ■</button>
         <button type="button" id="share-btn" title="Copy a share URL">Share 🔗</button>
+        <button type="button" id="theme-toggle" class="theme-toggle" title="Toggle light/dark theme" aria-label="Toggle theme">☀</button>
         <span id="version-tag" class="version-tag" aria-live="polite"></span>
       </div>
     </header>
@@ -41,16 +57,10 @@
         </div>
         <div id="output" class="output" role="log" aria-live="polite"></div>
         <div id="sql" class="output sql-panel" role="tabpanel" hidden></div>
-        <form id="repl-form" class="repl-input" hidden>
+        <div id="repl-form" class="repl-input" hidden>
           <span class="prompt">&gt;&gt;&gt;</span>
-          <input
-            type="text"
-            id="repl-input"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Type a Rell expression and press Enter"
-          />
-        </form>
+          <div id="repl-input" class="repl-monaco" aria-label="Rell REPL input"></div>
+        </div>
       </section>
     </main>
 

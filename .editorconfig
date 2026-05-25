@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# TypeScript / JavaScript / JSON / CSS / HTML / Markdown — match the style already
+# in src/, test/, web/index.html, etc.: 2-space indent, double-quoted strings,
+# semicolons, ES2022 module syntax. Prettier-equivalent defaults.
+[*.{ts,tsx,js,mjs,cjs,jsx,json,css,html,md}]
+indent_style = space
+indent_size = 2
+
+# Kotlin / Java — 4-space indent matches every existing .kt/.java in bridge/.
+[*.{kt,kts,java}]
+indent_style = space
+indent_size = 4
+
+# Gradle wrapper script and Bash helpers — 2-space (Google Shell style).
+[*.{sh,bash,gradle}]
+indent_style = space
+indent_size = 2
+
+# Makefiles need tabs.
+[Makefile]
+indent_style = tab
+
+# YAML (CI workflows) — 2-space, no tabs.
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2

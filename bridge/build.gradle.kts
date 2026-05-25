@@ -7,7 +7,7 @@ buildscript {
     // classes in packages we can't normally compile into from Kotlin sources (java.*, jakarta.*).
     repositories { mavenCentral() }
     dependencies {
-        classpath("org.ow2.asm:asm:9.8")
+        classpath("org.ow2.asm:asm:9.10.1")
     }
 }
 
@@ -19,15 +19,16 @@ plugins {
 description =
     "Kotlin/JVM bridge for the playground. Compiled to JS by TeaVM; exposes runFile / replCreate / replExecute as static @JSExport methods that the SPA worker invokes through ESM import."
 
-kotlin {
-    compilerOptions.jvmTarget = JvmTarget.JVM_21
-    compilerOptions.optIn.add("net.postchain.rell.api.base.InternalRellApi")
+kotlin.compilerOptions {
+    jvmTarget = JvmTarget.JVM_21
+    optIn.add("net.postchain.rell.api.base.InternalRellApi")
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-tasks.withType<JavaCompile>().configureEach {
-    options.release = 21
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 // ---- TeaVM stubs ---------------------------------------------------------------------------
@@ -434,8 +435,8 @@ val generateTeavmStubs by tasks.registering {
             val cw = org.objectweb.asm.ClassWriter(0)
             val access = if (stub.isInterface) {
                 org.objectweb.asm.Opcodes.ACC_PUBLIC or
-                    org.objectweb.asm.Opcodes.ACC_INTERFACE or
-                    org.objectweb.asm.Opcodes.ACC_ABSTRACT
+                        org.objectweb.asm.Opcodes.ACC_INTERFACE or
+                        org.objectweb.asm.Opcodes.ACC_ABSTRACT
             } else {
                 org.objectweb.asm.Opcodes.ACC_PUBLIC or org.objectweb.asm.Opcodes.ACC_SUPER
             }
@@ -551,23 +552,20 @@ teavm {
     js {
         // ESM output — the SPA worker imports the generated module directly.
         moduleType = JSModuleType.ES2015
-        // NONE — TeaVM 0.12's `Devirtualization.castCanFail` (called at BALANCED+) has a bug
-        // (`Illegal type signature: [java/lang/Class;` — strips the L from array-of-Class
-        // type strings in ValueDependencyInfo.getTypes()). Fixed on master but not in a
-        // released artifact. NONE skips the optimization pipeline entirely.
+        // NONE — TeaVM 0.14's JS backend NPEs in `ClassInfoGenerator.writeSimpleConstructors`
+        // at both BALANCED and AGGRESSIVE on this codebase. We attempted to migrate to the
+        // WasmGC backend (which would also need NONE here, but the GC builder NPEs in
+        // `WasmGCVirtualTableBuilder.addImplementorToInterface:123` — upstream bug, not ours).
+        // When TeaVM ships a fix for either, we can drop NONE and / or switch to wasmGC.
         optimization = OptimizationLevel.NONE
         // Run TeaVM in a forked JVM. The classlib + reachability analysis routinely needs many
         // GB of heap on rell-base + its transitive deps; running in-process competes with
         // Gradle's daemon heap. 8 GB is what the slow dependency-propagation pass needs to
         // converge without thrashing GC.
-        //
-        // (Set `outOfProcess = false` temporarily when debugging — the daemon swallows
-        // stacktraces and you can't tell *where* an `IllegalArgumentException` originated.)
         outOfProcess = true
         processMemory = 8192
         sourceMap = true
         obfuscated = false
-        // Drop into bridge/build/generated/teavm/js/ — copied into web/ by the :web Vite build.
         targetFileName = "rell-playground-bridge.js"
     }
 }

@@ -1,15 +1,89 @@
+/* Chromia design tokens, lifted from chromia-docs's custom.css.
+   Two themes via [data-theme="light"|"dark"] on <html>. Default chosen by
+   prefers-color-scheme on first load; a toolbar button toggles + persists. */
+
+@font-face {
+  font-family: "International-bold";
+  src: url("/fonts/NBInternational/NBInternationalBoldWebfont.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "International-regular";
+  src: url("/fonts/NBInternational/NBInternationalRegularWebfont.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "International-mono";
+  src: url("/fonts/NBInternational/NBInternationalMonoWebfont.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Battlefin";
+  src: url("/fonts/Battlefin-Black.otf") format("opentype");
+  font-display: swap;
+}
+
 :root {
-  --bg: #1e1e1e;
-  --panel: #252526;
-  --border: #3c3c3c;
-  --fg: #d4d4d4;
-  --fg-dim: #858585;
-  --accent: #007acc;
+  /* Chromia brand palette. */
+  --chromia-dark: #1f1a23;
+  --chromia-off-white: #fff8f8;
+  --chromia-grey: #675e6e;
+  --chromia-grey-lighter: #ede2e2;
+  --chromia-grey-lightest: #f7eeee;
+  --chromia-grey-darker: #403c44;
+  --chromia-grey-darkest: #332d37;
+  --chromia-red: #ff405e;
+  --chromia-red-dark: #d41a45;
+  --chromia-purple: #cc91f0;
+  --chromia-purple-dark: #9e5ecf;
+  --chromia-soft-pink: #ffb0c2;
+  --chromia-soft-pink-dark: #ff87a6;
+
+  --font-sans: "International-regular", system-ui, -apple-system, sans-serif;
+  --font-display: "International-bold", "International-regular", system-ui, sans-serif;
+  --font-mono: "International-mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-code: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+[data-theme="light"] {
+  --bg: var(--chromia-off-white);
+  --panel: #ffffff;
+  --panel-alt: var(--chromia-grey-lightest);
+  --border: var(--chromia-grey-lighter);
+  --border-strong: #d8c9c9;
+  --fg: var(--chromia-dark);
+  --fg-dim: var(--chromia-grey);
+  --accent: var(--chromia-purple-dark);
+  --accent-hover: var(--chromia-purple);
   --accent-fg: #ffffff;
-  --error: #f48771;
-  --warning: #cca700;
+  --error: var(--chromia-red-dark);
+  --warning: #c08400;
+  --value: #2f7a6a;
+  --shadow-sm: 0 1px 2px rgba(31, 26, 35, 0.06);
+  --shadow-md: 0 4px 16px rgba(31, 26, 35, 0.08);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: var(--chromia-dark);
+  --panel: var(--chromia-grey-darkest);
+  --panel-alt: var(--chromia-grey-darker);
+  --border: #4a4451;
+  --border-strong: #5c5564;
+  --fg: var(--chromia-off-white);
+  --fg-dim: #b9b0c0;
+  --accent: var(--chromia-purple);
+  --accent-hover: var(--chromia-purple-dark);
+  --accent-fg: var(--chromia-dark);
+  --error: #ff8e9e;
+  --warning: #ffd166;
   --value: #4ec9b0;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
 }
 
 * {
@@ -22,7 +96,10 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -33,16 +110,43 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 1rem;
+  gap: 1.25rem;
+  padding: 0.6rem 1.25rem;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
 }
 
 .brand {
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* "Chromia" lowercase 'o' rendered in brand purple — matches the docs site
+   logo treatment without needing the SVG. */
+.brand .brand-name .brand-o {
+  color: var(--chromia-purple-dark);
+}
+
+[data-theme="dark"] .brand .brand-name .brand-o {
+  color: var(--chromia-purple);
+}
+
+.brand .brand-suffix {
+  font-family: var(--font-display);
+  color: var(--chromia-purple-dark);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .brand .brand-suffix {
+  color: var(--chromia-purple);
 }
 
 .mode-switch {
@@ -53,17 +157,30 @@ body {
 .mode-switch button {
   background: transparent;
   color: var(--fg-dim);
-  border: 1px solid var(--border);
-  padding: 0.35rem 0.85rem;
-  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
   cursor: pointer;
   font: inherit;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.mode-switch button:hover {
+  background: var(--panel-alt);
+  color: var(--fg);
 }
 
 .mode-switch button[aria-selected="true"] {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
+  background: rgba(158, 94, 207, 0.12);
+  color: var(--accent);
+  border-color: rgba(158, 94, 207, 0.25);
+}
+
+[data-theme="dark"] .mode-switch button[aria-selected="true"] {
+  background: rgba(204, 145, 240, 0.15);
+  color: var(--accent);
+  border-color: rgba(204, 145, 240, 0.3);
 }
 
 .actions {
@@ -77,10 +194,17 @@ body {
   background: var(--panel);
   color: var(--fg);
   border: 1px solid var(--border);
-  padding: 0.35rem 0.85rem;
-  border-radius: 4px;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
   cursor: pointer;
   font: inherit;
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.actions button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--panel-alt);
 }
 
 .actions button.primary {
@@ -89,17 +213,36 @@ body {
   border-color: var(--accent);
 }
 
+.actions button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
 .actions button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Theme toggle: square icon button. */
+.actions .theme-toggle {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border-radius: 8px;
 }
 
 .version-tag {
   color: var(--fg-dim);
-  font-size: 0.8em;
+  font-size: 0.78em;
   font-family: var(--font-mono);
   white-space: nowrap;
   cursor: help;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
 }
 
 .layout {
@@ -109,11 +252,23 @@ body {
   min-height: 0;
 }
 
+/* REPL mode hides the editor — the input bar at the bottom is the only way to
+   send commands. The output pane stretches to full width. */
+body[data-mode="repl"] .layout {
+  grid-template-columns: 1fr;
+}
+
+body[data-mode="repl"] .editor-pane {
+  display: none;
+}
+
+
 .editor-pane,
 .output-pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--bg);
 }
 
 .editor-pane {
@@ -130,7 +285,7 @@ body {
   gap: 0.25rem;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  padding: 0.25rem 0.5rem;
+  padding: 0.3rem 0.6rem;
   font-size: 0.85em;
 }
 
@@ -138,10 +293,17 @@ body {
   background: transparent;
   border: 1px solid transparent;
   color: var(--fg-dim);
-  padding: 0.2rem 0.6rem;
-  border-radius: 3px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
   cursor: pointer;
   font: inherit;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.output-tab:hover {
+  background: var(--panel-alt);
+  color: var(--fg);
 }
 
 .output-tab.active {
@@ -153,6 +315,7 @@ body {
 .sql-panel {
   white-space: pre;
   color: var(--value);
+  font-family: var(--font-code);
 }
 
 .sql-panel .sql-entry {
@@ -168,7 +331,7 @@ body {
 .progress {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  padding: 0.4rem 1rem 0.55rem;
+  padding: 0.45rem 1.25rem 0.6rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -195,7 +358,7 @@ body {
 
 .progress-track {
   height: 4px;
-  background: var(--bg);
+  background: var(--panel-alt);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -219,12 +382,12 @@ body {
 
 .output {
   flex: 1 1 auto;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 13px;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.25rem;
   overflow: auto;
   white-space: pre-wrap;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .output .line {
@@ -262,12 +425,17 @@ body {
   color: var(--fg-dim);
 }
 
+.output .line.system {
+  color: var(--fg-dim);
+  font-style: italic;
+}
+
 .repl-input {
   display: flex;
   gap: 0.5rem;
   align-items: center;
   border-top: 1px solid var(--border);
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.25rem;
   background: var(--panel);
 }
 
@@ -280,14 +448,14 @@ body {
 
 .repl-input .prompt {
   font-family: var(--font-mono);
-  color: var(--fg-dim);
+  color: var(--accent);
+  align-self: center;
 }
 
-.repl-input input {
+/* Monaco-backed REPL input — single-line editor for Rell syntax highlighting.
+   Height matches a Monaco line at 13px font, with our 4/4 vertical padding. */
+.repl-monaco {
   flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--fg);
-  font: 13px var(--font-mono);
-  outline: none;
+  height: 26px;
+  min-width: 0;
 }

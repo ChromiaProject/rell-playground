@@ -23,6 +23,10 @@ export function createProgressBar(): ProgressBar {
       root.hidden = false;
     },
     set(loaded: number, total: number, label?: string): void {
+      // `set` is the only entry point for the worker's progress events, so make it
+      // re-show the bar if it was previously hidden — saves callers from pairing every
+      // `set` with a `show`.
+      root.hidden = false;
       if (label) text.textContent = label;
       if (total > 0) {
         bar.classList.remove("indeterminate");

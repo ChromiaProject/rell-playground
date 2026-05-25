@@ -1,7 +1,7 @@
 // One-file mode: paste a complete program (or a REPL-able fragment), click Run.
 // Fresh session per run; output + SQL panels cleared at the start.
 
-import type { StreamEvent } from "../bridge/client.ts";
+import { BridgeCancelled, type StreamEvent } from "../bridge/client.ts";
 import type { EditorHandle } from "../editor/editor.ts";
 import type { OutputPanel } from "../output.ts";
 
@@ -32,6 +32,9 @@ export function createFileMode(
       try {
         await runner(code, onEvent);
       } catch (e) {
+        // Bridge resets (Stop / mode switch) reject pending calls with BridgeCancelled.
+        // The cancellation site already cleared / announced — no need to surface an error.
+        if (e instanceof BridgeCancelled) return;
         output.appendLine(
           `error: ${e instanceof Error ? e.message : String(e)}`,
           "error",

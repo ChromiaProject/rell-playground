@@ -6,7 +6,7 @@
 // having to hand-roll `new URL("./worker.js", import.meta.url)` glue.
 import workerUrl from "./bridge/worker.ts?worker&url";
 import { createBridgeClient } from "./bridge/client.ts";
-import { mountEditor, DEFAULT_FILE, SQL_EXAMPLE } from "./editor/editor.ts";
+import { mountEditor, mountReplInput, DEFAULT_FILE, SQL_EXAMPLE } from "./editor/editor.ts";
 import { OutputPanel } from "./output.ts";
 import { createFileMode } from "./modes/file-mode.ts";
 import { createReplMode } from "./modes/repl-mode.ts";
@@ -17,24 +17,51 @@ import { decode, encode } from "./util/share.ts";
 
 type Mode = "file" | "sql" | "repl";
 
+type Theme = "light" | "dark";
+const THEME_STORAGE_KEY = "rell-playground:theme";
+
+function readTheme(): Theme {
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "dark" ? "dark" : "light";
+}
+
+function applyTheme(theme: Theme): void {
+  document.documentElement.setAttribute("data-theme", theme);
+  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* private mode */ }
+  // Notify any subscribers (Monaco) that the theme changed.
+  document.dispatchEvent(new CustomEvent("themechange", { detail: { theme } }));
+}
+
 async function main(): Promise<void> {
+
   const outputEl = document.getElementById("output");
   const sqlEl = document.getElementById("sql");
   const editorEl = document.getElementById("editor");
   const runBtn = document.getElementById("run-btn") as HTMLButtonElement | null;
   const stopBtn = document.getElementById("stop-btn") as HTMLButtonElement | null;
   const shareBtn = document.getElementById("share-btn") as HTMLButtonElement | null;
+  const themeToggle = document.getElementById("theme-toggle") as HTMLButtonElement | null;
   const versionTag = document.getElementById("version-tag");
-  const replForm = document.getElementById("repl-form") as HTMLFormElement | null;
-  const replInput = document.getElementById("repl-input") as HTMLInputElement | null;
+  const replForm = document.getElementById("repl-form") as HTMLElement | null;
+  const replInputEl = document.getElementById("repl-input") as HTMLElement | null;
   const tabOutput = document.getElementById("tab-output") as HTMLButtonElement | null;
   const tabSql = document.getElementById("tab-sql") as HTMLButtonElement | null;
   const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".mode-switch button"));
 
-  if (!outputEl || !sqlEl || !editorEl || !runBtn || !stopBtn || !shareBtn || !versionTag ||
-      !replForm || !replInput || !tabOutput || !tabSql) {
+  if (!outputEl || !sqlEl || !editorEl || !runBtn || !stopBtn || !shareBtn || !themeToggle || !versionTag ||
+      !replForm || !replInputEl || !tabOutput || !tabSql) {
     throw new Error("missing required DOM nodes");
   }
+
+  // Reflect current theme in the toggle glyph, and wire the click.
+  const refreshToggleGlyph = (): void => {
+    themeToggle.textContent = readTheme() === "dark" ? "☀" : "☾";
+  };
+  refreshToggleGlyph();
+  themeToggle.addEventListener("click", () => {
+    applyTheme(readTheme() === "dark" ? "light" : "dark");
+    refreshToggleGlyph();
+  });
 
   // Optional shared buffer from URL hash. Overrides the localStorage cache.
   let initial: string | undefined;
@@ -47,6 +74,7 @@ async function main(): Promise<void> {
   const sql = createSqlPanel(sqlEl);
   const progress = createProgressBar();
   const editor = await mountEditor(editorEl, initial);
+  const replInput = mountReplInput(replInputEl);
 
   // Output / SQL tab switching.
   const setTab = (which: "output" | "sql"): void => {
@@ -95,19 +123,50 @@ async function main(): Promise<void> {
   const version = await bridge.version();
   // Full string is something like:
   //   "rell: 0.15.4; postchain: 3.49.10; branch: master; commit: …; dirty: true"
-  // Showing the whole thing in the toolbar pushes other actions off-screen.
-  // Surface a compact "rell X · postchain Y" label and stash the full string
-  // on title= so it's still discoverable on hover.
-  const m = /rell:\s*([^;]+);\s*postchain:\s*([^;]+)/i.exec(version);
+  // Surface just the Rell version in the topbar — postchain is irrelevant for
+  // the in-browser playground (no node, no consensus). The full descriptor stays
+  // on `title=` for discoverability.
+  const m = /rell:\s*([^;]+)/i.exec(version);
   const rell = m?.[1]?.trim();
-  const postchain = m?.[2]?.trim();
-  versionTag.textContent = rell && postchain ? `rell ${rell} · postchain ${postchain}` : version;
+  versionTag.textContent = rell ? `rell ${rell}` : version;
   versionTag.title = version;
   output.appendLine(`Ready — ${version}`, "system");
+
+  // Phased indeterminate progress bar during Run/SQL/REPL execution. The worker call
+  // (`bridge.runFile` etc.) is one synchronous JVM-in-JS block so we can't get genuine
+  // sub-phase signals from inside; instead we flip the label on a timer to communicate
+  // that something is happening. Thresholds are tuned to typical TeaVM-bridge timings:
+  // a trivial `print` round-trips in ~200 ms, a fact(10) in ~500 ms, and a SQL dry-run
+  // with several entities takes 2–4 s on first hit.
+  let phaseTimer: ReturnType<typeof setInterval> | null = null;
+  const phaseLabel = (ms: number): string => {
+    if (ms < 600) return "Compiling Rell…";
+    if (ms < 2500) return "Running…";
+    return "Working…";
+  };
+  const stopPhases = (): void => {
+    if (phaseTimer !== null) {
+      clearInterval(phaseTimer);
+      phaseTimer = null;
+    }
+  };
+  const startPhases = (): void => {
+    stopPhases();
+    const t0 = performance.now();
+    progress.show(phaseLabel(0));
+    phaseTimer = setInterval(() => {
+      progress.set(0, 0, phaseLabel(performance.now() - t0));
+    }, 150);
+  };
 
   const busy = (b: boolean): void => {
     runBtn.disabled = b;
     stopBtn.disabled = !b;
+    if (b) startPhases();
+    else {
+      stopPhases();
+      progress.hide();
+    }
   };
 
   const clearPanels = (): void => {
@@ -151,8 +210,24 @@ async function main(): Promise<void> {
 
   let mode: Mode = "file";
   applyTabsForMode(mode);
+
+  // Cancel any in-flight bridge call. The worker is single-threaded JVM-in-JS, so
+  // a pending compile/run can't be observed mid-flight — the only way to abort
+  // is to terminate the worker (which `bridge.reset` does) and respawn. Any pending
+  // promises reject with "worker terminated"; their try/finally blocks fire setBusy(false).
+  const cancelInFlight = (reason: string): void => {
+    if (!runBtn.disabled) return; // not busy → nothing to cancel
+    bridge.reset();
+    output.appendLine(reason, "system");
+    busy(false);
+  };
+
   const setMode = async (next: Mode) => {
     if (next === mode) return;
+    // Switching modes while a previous run is still compiling/executing leaves
+    // the user staring at a "Working…" spinner that's still tied to the old
+    // mode's panels. Halt the worker so the new mode starts clean.
+    cancelInFlight(`Cancelled: switched to ${next} mode.`);
     if (mode === "repl") await replMode.leave();
     mode = next;
     currentMode = next;
@@ -164,6 +239,12 @@ async function main(): Promise<void> {
       b.setAttribute("aria-selected", active ? "true" : "false");
     }
     replForm.hidden = mode !== "repl";
+    // Drive CSS off `body[data-mode=...]`. REPL hides the editor entirely and
+    // gives the output panel the full width — the input bar at the bottom is
+    // the only way to send commands in that mode.
+    document.body.dataset["mode"] = mode;
+    // No editor in REPL mode → Run button has nothing meaningful to do.
+    runBtn.hidden = mode === "repl";
     applyTabsForMode(mode);
     maybeLoadExample(mode);
     if (mode === "repl") {
@@ -194,10 +275,7 @@ async function main(): Promise<void> {
     busy(false);
   });
 
-  replForm.addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    const cmd = replInput.value;
-    replInput.value = "";
+  replInput.onSubmit((cmd) => {
     void replMode.submitLine(cmd);
   });
 

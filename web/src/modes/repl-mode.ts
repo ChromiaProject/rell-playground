@@ -5,7 +5,7 @@
 // One persistent session per mode lifecycle; switching tabs disposes
 // the session and creates a new one when REPL mode is re-entered.
 
-import type { BridgeClient, StreamEvent } from "../bridge/client.ts";
+import { BridgeCancelled, type BridgeClient, type StreamEvent } from "../bridge/client.ts";
 import type { EditorHandle } from "../editor/editor.ts";
 import type { OutputPanel } from "../output.ts";
 
@@ -34,6 +34,13 @@ export function createReplMode(
     return id;
   }
 
+  // BridgeCancelled bubbles up here when the user switches modes (or hits Stop)
+  // mid-call. The cancellation site already announced the halt, so swallow it.
+  const swallowCancelled = (e: unknown): void => {
+    if (e instanceof BridgeCancelled) return;
+    throw e;
+  };
+
   return {
     async enter() {
       clearPanels();
@@ -41,34 +48,45 @@ export function createReplMode(
       setBusy(true);
       try {
         await ensureSession();
+      } catch (e) {
+        swallowCancelled(e);
       } finally {
         setBusy(false);
       }
     },
     async leave() {
       if (sessionId !== null) {
-        await bridge.replDispose(sessionId);
-        sessionId = null;
+        try {
+          await bridge.replDispose(sessionId);
+        } catch (e) {
+          swallowCancelled(e);
+        } finally {
+          sessionId = null;
+        }
       }
     },
     async runEditor() {
       const code = editor.getValue();
       if (!code.trim()) return;
-      const id = await ensureSession();
       setBusy(true);
       try {
+        const id = await ensureSession();
         await bridge.replExecute(id, code, onEvent);
+      } catch (e) {
+        swallowCancelled(e);
       } finally {
         setBusy(false);
       }
     },
     async submitLine(command) {
       if (!command.trim()) return;
-      const id = await ensureSession();
       output.appendLine(command, "input");
       setBusy(true);
       try {
+        const id = await ensureSession();
         await bridge.replExecute(id, command, onEvent);
+      } catch (e) {
+        swallowCancelled(e);
       } finally {
         setBusy(false);
       }

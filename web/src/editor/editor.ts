@@ -14,6 +14,14 @@ export interface EditorHandle {
   dispose(): void;
 }
 
+export interface ReplInputHandle {
+  getValue(): string;
+  setValue(value: string): void;
+  onSubmit(cb: (value: string) => void): void;
+  focus(): void;
+  dispose(): void;
+}
+
 // Plain "Run" example: pure functions + print. No database needed.
 export const DEFAULT_FILE = `// One-file Rell program. Press Run.
 function fact(n: integer): integer {
@@ -83,10 +91,16 @@ export async function mountEditor(container: HTMLElement, initial?: string): Pro
 
   const startText = initial ?? localStorage.getItem(STORAGE_KEY) ?? DEFAULT_FILE;
 
+  // Match Monaco's theme to the document's data-theme. The HTML head's inline
+  // bootstrap sets it before this code runs, so the editor opens on the right
+  // theme without a visible flash.
+  const monacoTheme = (): string =>
+    document.documentElement.getAttribute("data-theme") === "dark" ? "vs-dark" : "vs";
+
   const editor = monaco.editor.create(container, {
     value: startText,
     language: "rell",
-    theme: "vs-dark",
+    theme: monacoTheme(),
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
     fontSize: 14,
     minimap: { enabled: false },
@@ -94,6 +108,12 @@ export async function mountEditor(container: HTMLElement, initial?: string): Pro
     automaticLayout: true,
     tabSize: 4,
     insertSpaces: true,
+  });
+
+  // Track theme switches from main.ts and update Monaco's global theme.
+  // `monaco.editor.setTheme` is global (affects every editor on the page).
+  document.addEventListener("themechange", () => {
+    monaco.editor.setTheme(monacoTheme());
   });
 
   const listeners: Array<(value: string) => void> = [];
@@ -107,6 +127,76 @@ export async function mountEditor(container: HTMLElement, initial?: string): Pro
     getValue: () => editor.getValue(),
     setValue: (v: string) => editor.setValue(v),
     onChange: (cb) => listeners.push(cb),
+    focus: () => editor.focus(),
+    dispose: () => editor.dispose(),
+  };
+}
+
+/**
+ * Mount a single-line Rell editor inside `container` for use as the REPL prompt.
+ * Pressing Enter fires the submit callback and clears the buffer; Shift+Enter
+ * inserts a newline so users can paste multi-line snippets when needed.
+ *
+ * Assumes {@link mountEditor} has already run (Monaco environment + Rell language
+ * are global state on `self.MonacoEnvironment` / `monaco.languages`).
+ */
+export function mountReplInput(container: HTMLElement): ReplInputHandle {
+  const submitListeners: Array<(value: string) => void> = [];
+
+  const monacoTheme = (): string =>
+    document.documentElement.getAttribute("data-theme") === "dark" ? "vs-dark" : "vs";
+
+  const editor = monaco.editor.create(container, {
+    value: "",
+    language: "rell",
+    theme: monacoTheme(),
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    fontSize: 13,
+    minimap: { enabled: false },
+    lineNumbers: "off",
+    glyphMargin: false,
+    folding: false,
+    lineDecorationsWidth: 0,
+    lineNumbersMinChars: 0,
+    overviewRulerLanes: 0,
+    overviewRulerBorder: false,
+    hideCursorInOverviewRuler: true,
+    scrollBeyondLastLine: false,
+    scrollbar: { vertical: "hidden", horizontal: "hidden", handleMouseWheel: false },
+    wordWrap: "off",
+    automaticLayout: true,
+    contextmenu: false,
+    renderLineHighlight: "none",
+    quickSuggestions: false,
+    suggestOnTriggerCharacters: false,
+    parameterHints: { enabled: false },
+    tabSize: 4,
+    insertSpaces: true,
+    padding: { top: 4, bottom: 4 },
+  });
+
+  document.addEventListener("themechange", () => {
+    monaco.editor.setTheme(monacoTheme());
+  });
+
+  // Enter submits; Shift+Enter inserts a newline (Monaco's default Enter binding).
+  // `keybindingContext: "editorTextFocus && !suggestWidgetVisible"` matches the
+  // standard Enter behaviour without stealing it when a completion is open.
+  editor.addCommand(
+    monaco.KeyCode.Enter,
+    () => {
+      const value = editor.getValue();
+      if (!value.trim()) return;
+      editor.setValue("");
+      for (const l of submitListeners) l(value);
+    },
+    "editorTextFocus && !suggestWidgetVisible",
+  );
+
+  return {
+    getValue: () => editor.getValue(),
+    setValue: (v: string) => editor.setValue(v),
+    onSubmit: (cb) => submitListeners.push(cb),
     focus: () => editor.focus(),
     dispose: () => editor.dispose(),
   };

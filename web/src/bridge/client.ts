@@ -6,6 +6,18 @@ import type { WorkerEvent, WorkerRequest } from "./protocol.ts";
 
 export type StreamEvent = Exclude<WorkerEvent, { kind: "done" }>;
 
+/**
+ * Thrown when {@link BridgeClient.reset} cancels in-flight calls (e.g. user clicks
+ * Stop, or switches mode mid-run). Mode handlers should silently swallow this —
+ * the output panel has already been cleared/announced by the cancellation site.
+ */
+export class BridgeCancelled extends Error {
+  constructor(message = "worker terminated") {
+    super(message);
+    this.name = "BridgeCancelled";
+  }
+}
+
 export interface BridgeClient {
   init(onEvent?: (e: StreamEvent) => void): Promise<void>;
   version(): Promise<string>;
@@ -109,7 +121,8 @@ export function createBridgeClient(workerUrl: URL): BridgeClient {
     },
     reset() {
       worker.terminate();
-      for (const p of pending.values()) p.reject(new Error("worker terminated"));
+      const cancelled = new BridgeCancelled();
+      for (const p of pending.values()) p.reject(cancelled);
       pending.clear();
       worker = spawn(workerUrl);
     },

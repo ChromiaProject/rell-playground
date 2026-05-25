@@ -21,15 +21,26 @@ The Rell compiler + interpreter is compiled ahead-of-time to JavaScript by
 
 ## Architecture
 
-```
-SPA (TypeScript, Vite)
-  └─ Web Worker (ESM)
-       └─ rell-playground-bridge.js  (TeaVM AOT JS)
-            ├─ PlaygroundJsBridge    @JSExport static API (version / runFile / runModule / repl*)
-            ├─ ReplSession           wraps ReplInterpreter (Run + REPL modes)
-            ├─ ModuleSession         compiles source as module 'main' (SQL dry-run)
-            ├─ CapturingSqlManager   records SQL before returning empty results
-            └─ BufferedReplChannel   emits a JSON event envelope
+```mermaid
+flowchart TD
+    SPA["SPA — TypeScript, Vite"]
+    Worker["Web Worker (ESM)"]
+    Bridge["rell-playground-bridge.js<br/>TeaVM AOT JS"]
+    API["PlaygroundJsBridge<br/>@JSExport static API<br/>version / runFile / runModule / repl*"]
+    Repl["ReplSession<br/>wraps ReplInterpreter<br/>(Run + REPL modes)"]
+    Module["ModuleSession<br/>compiles source as module 'main'<br/>(SQL dry-run)"]
+    Sql["CapturingSqlManager<br/>records SQL before<br/>returning empty results"]
+    Channel["BufferedReplChannel<br/>emits a JSON event envelope"]
+
+    SPA --> Worker
+    Worker --> Bridge
+    Bridge --> API
+    API --> Repl
+    API --> Module
+    Repl --> Sql
+    Module --> Sql
+    Repl --> Channel
+    Module --> Channel
 ```
 
 The worker imports `rell-playground-bridge.js` as ESM and calls the

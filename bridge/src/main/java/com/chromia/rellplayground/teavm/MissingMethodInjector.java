@@ -53,34 +53,9 @@ final class MissingMethodInjector implements ClassHolderTransformer {
     private static final Map<String, List<String>> MISSING_FIELDS = new HashMap<>();
 
     /**
-     * Methods to stub *abstractly* (no body, marked native). Used as an escape hatch for the
-     * handful of signatures that confuse TeaVM 0.12's `ProgramEmitter` when given a normal
-     * throw-UOE body — e.g. `MethodHandles$Lookup.defineClass([B)Ljava/lang/Class;` makes
-     * TeaVM cough up `IllegalArgumentException: Illegal type signature: [java/lang/Class;`
-     * deep in its array-of-Class handling. A native, body-less holder satisfies dependency
-     * analysis without going through the buggy emitter path.
-     */
-    private static final Map<String, List<String>> NATIVE_METHODS = new HashMap<>();
-
-    /**
-     * Methods to stub with a *silent* return-default body (`return null` for object types,
-     * `return 0/false` for primitives, `return;` for void) instead of `throw UOE`. Useful
-     * when downstream library code calls into our stub on a hot path and treats null as a
-     * "feature unavailable" sentinel (e.g. jOOQ's `AbstractDataType.getArrayType()` ->
-     * `Class.arrayType()` — returning null lets jOOQ skip array-type registration).
-     *
-     * Each entry is `<className>#<methodName(descriptor)>`; matched exactly.
-     */
-    private static final java.util.Set<String> SILENT_METHODS = new java.util.HashSet<>();
-
-    private static void addSilentMethods(String className, List<String> methods) {
-        for (var m : methods) SILENT_METHODS.add(className + "#" + m);
-    }
-
-    /**
      * Methods to stub with a body that returns the receiver (`return this`). Only meaningful
      * for instance methods whose return type is assignable from the declaring class — used
-     * specifically for `Class.arrayType()` (see [SILENT_METHODS] notes).
+     * specifically for `Class.arrayType()`.
      */
     private static final java.util.Set<String> RETURN_THIS_METHODS = new java.util.HashSet<>();
 
@@ -94,22 +69,13 @@ final class MissingMethodInjector implements ClassHolderTransformer {
      * (e.g. `Class.getResource` + `Properties.load`) whose bytecode references would otherwise
      * drag the JVM-only classes into TeaVM reachability analysis.
      *
-     * Unlike [SILENT_METHODS], the method is expected to EXIST already — the program is
-     * overwritten in place rather than added. JVM behavior in upstream rell3 is preserved.
+     * The method is expected to EXIST already — the program is overwritten in place rather
+     * than added. JVM behavior in upstream rell3 is preserved.
      */
     private static final java.util.Set<String> REPLACE_BODY_METHODS = new java.util.HashSet<>();
 
     private static void addReplaceBodyMethods(String className, List<String> methods) {
         for (var m : methods) REPLACE_BODY_METHODS.add(className + "#" + m);
-    }
-
-    private static void addNativeMethods(String className, List<String> methods) {
-        NATIVE_METHODS.merge(className, methods, (a, b) -> {
-            var combined = new java.util.ArrayList<String>(a.size() + b.size());
-            combined.addAll(a);
-            combined.addAll(b);
-            return combined;
-        });
     }
 
     /**
@@ -1180,29 +1146,9 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 var key = cls.getName() + "#" + entry;
                 if (RETURN_THIS_METHODS.contains(key)) {
                     method.setProgram(buildReturnThisStub(method, context, cls.getName()));
-                } else if (SILENT_METHODS.contains(key)) {
-                    method.setProgram(buildSilentStub(method, context));
                 } else {
                     method.setProgram(buildThrowStub(method, context));
                 }
-                cls.addMethod(method);
-            }
-        }
-
-        var nativeEntries = NATIVE_METHODS.get(cls.getName());
-        if (nativeEntries != null) {
-            for (var entry : nativeEntries) {
-                var sigStart = entry.indexOf('(');
-                var name = entry.substring(0, sigStart);
-                var desc = MethodDescriptor.parse(name + entry.substring(sigStart));
-                if (cls.getMethod(desc) != null) continue;
-
-                var method = new MethodHolder(desc);
-                method.setLevel(AccessLevel.PUBLIC);
-                // NATIVE method holder — no body. TeaVM treats unimplemented natives as
-                // "throw new RuntimeException(...)" at codegen time without going through
-                // the buggy throw-UOE program emitter path.
-                method.getModifiers().add(ElementModifier.NATIVE);
                 cls.addMethod(method);
             }
         }
