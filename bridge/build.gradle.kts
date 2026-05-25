@@ -128,7 +128,6 @@ val stubs = listOf(
     Stub("java/lang/RuntimePermission", isInterface = false),
     Stub("java/lang/StackWalker", isInterface = false),
     Stub("java/lang/VerifyError", isInterface = false),
-    Stub("java/lang/annotation/Documented", isInterface = true),
 
     // java.lang.reflect — reflection types referenced by jackson-databind / kotlin-reflect deep paths.
     Stub("java/lang/reflect/GenericArrayType", isInterface = true),
@@ -187,7 +186,6 @@ val stubs = listOf(
     Stub("java/lang/IllegalCallerException", isInterface = false),
     Stub("java/lang/InstantiationError", isInterface = false),
     Stub("java/lang/Module\$ArchivedData", isInterface = false),
-    Stub("java/lang/Runtime\$Version", isInterface = false),
     Stub("java/lang/StackStreamFactory", isInterface = false),
     Stub("java/lang/StackWalker\$Option", isInterface = false),
     Stub("java/lang/ThreadGroup", isInterface = false),
@@ -213,10 +211,6 @@ val stubs = listOf(
 
     // java.nio — file-system interaction is dead code in a browser.
     Stub("java/nio/channels/Channels", isInterface = false),
-    Stub("java/nio/file/Files", isInterface = false),
-    Stub("java/nio/file/Path", isInterface = true),
-    Stub("java/nio/file/Paths", isInterface = false),
-    Stub("java/nio/file/spi/FileSystemProvider", isInterface = false),
 
     // java.util — various reflection / serialisation leaf classes + nested $ classes.
     Stub("java/util/InputMismatchException", isInterface = false),
@@ -240,7 +234,6 @@ val stubs = listOf(
     Stub("java/lang/reflect/Parameter", isInterface = false),
     Stub("java/lang/reflect/RecordComponent", isInterface = false),
     Stub("java/lang/reflect/GenericDeclaration", isInterface = true),
-    Stub("java/lang/annotation/Inherited", isInterface = true),
     Stub("java/lang/ModuleLayer", isInterface = false),
     Stub("java/lang/StackStreamFactory\$AbstractStackWalker", isInterface = false),
     Stub("java/lang/StackStreamFactory\$LiveStackInfoTraverser", isInterface = false),
@@ -268,7 +261,6 @@ val stubs = listOf(
     Stub("javax/xml/datatype/XMLGregorianCalendar", isInterface = false),
 
     // Fourth-wave classes — referenced by jOOQ's XML config + mini-JAXB + JDBC error handling.
-    Stub("java/nio/file/FileSystems", isInterface = false),
     Stub("java/security/CodeSource", isInterface = false),
     Stub("java/security/ProtectionDomain", isInterface = false),
     Stub("java/sql/SQLFeatureNotSupportedException", isInterface = false),
@@ -298,7 +290,6 @@ val stubs = listOf(
     Stub("org/xml/sax/ErrorHandler", isInterface = true),
     Stub("org/xml/sax/Locator", isInterface = true),
     Stub("org/xml/sax/helpers/DefaultHandler", isInterface = false),
-    Stub("java/nio/file/FileSystem", isInterface = false),
     Stub("java/nio/file/FileStore", isInterface = false),
     Stub("java/nio/file/WatchService", isInterface = true),
     Stub("java/util/logging/Handler", isInterface = false),
@@ -308,7 +299,6 @@ val stubs = listOf(
     // hits at link time (the runtime path never reaches `LocatorEx.getColumnNumber` because
     // the playground doesn't drive XML config files into jOOQ).
     Stub("org/glassfish/jaxb/core/v2/runtime/unmarshaller/LocatorEx", isInterface = true),
-    Stub("java/nio/file/LinkOption", isInterface = false),
     Stub("jakarta/xml/bind/ValidationEventLocator", isInterface = true),
 
     // Seventh wave — leaves of dependencies we excluded at the Gradle level but whose names
@@ -552,12 +542,14 @@ teavm {
     js {
         // ESM output — the SPA worker imports the generated module directly.
         moduleType = JSModuleType.ES2015
-        // NONE — TeaVM 0.14's JS backend NPEs in `ClassInfoGenerator.writeSimpleConstructors`
-        // at both BALANCED and AGGRESSIVE on this codebase. We attempted to migrate to the
-        // WasmGC backend (which would also need NONE here, but the GC builder NPEs in
-        // `WasmGCVirtualTableBuilder.addImplementorToInterface:123` — upstream bug, not ours).
-        // When TeaVM ships a fix for either, we can drop NONE and / or switch to wasmGC.
-        optimization = OptimizationLevel.NONE
+        // BALANCED — 0.13.1's JS backend handles BALANCED on this codebase (cuts ~17 MB vs
+        // NONE). AGGRESSIVE on 0.13.1 explodes the output to ~297 MB — likely a bug in its
+        // statement deduplication pass; not worth chasing.
+        //
+        // 0.14.x is gated on two upstream NPEs: `ClassInfoGenerator.writeSimpleConstructors`
+        // on the JS backend (any level) and `WasmGCVirtualTableBuilder.addImplementorToInterface`
+        // on the WasmGC backend. See konsoletyper/teavm#1188 + #1189. Revisit when fixed.
+        optimization = OptimizationLevel.BALANCED
         // Run TeaVM in a forked JVM. The classlib + reachability analysis routinely needs many
         // GB of heap on rell-base + its transitive deps; running in-process competes with
         // Gradle's daemon heap. 8 GB is what the slow dependency-propagation pass needs to

@@ -117,7 +117,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "getRecordComponents()[Ljava/lang/reflect/RecordComponent;",
                 "getResource(Ljava/lang/String;)Ljava/net/URL;",
                 "getTypeParameters()[Ljava/lang/reflect/TypeVariable;",
-                "isAnnotation()Z",
                 "isAnonymousClass()Z",
                 "isHidden()Z",
                 "isRecord()Z",
@@ -144,9 +143,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("java.lang.Package", List.of(
                 "getImplementationVersion()Ljava/lang/String;",
                 "module()Ljava/lang/Module;"
-        ));
-        addMethods("java.lang.Runtime", List.of(
-                "version()Ljava/lang/Runtime$Version;"
         ));
         addMethods("java.lang.SecurityManager", List.of(
                 "checkConnect(Ljava/lang/String;I)V",
@@ -330,9 +326,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         ));
         addMethods("java.net.URLClassLoader", List.of(
                 "getURLs()[Ljava/net/URL;"
-        ));
-        addMethods("java.nio.file.Path", List.of(
-                "toUri()Ljava/net/URI;"
         ));
         addMethods("java.security.MessageDigest", List.of(
                 "<init>(Ljava/lang/String;)V",
@@ -624,17 +617,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("java.net.InetSocketAddress", List.of(
                 "<init>(Ljava/lang/String;I)V"
         ));
-        addMethods("java.nio.file.Path", List.of(
-                "getParent()Ljava/nio/file/Path;"
-        ));
-        addMethods("java.nio.file.Paths", List.of(
-                "get(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;",
-                "get(Ljava/net/URI;)Ljava/nio/file/Path;"
-        ));
-        addMethods("java.nio.file.spi.FileSystemProvider", List.of(
-                "getPath(Ljava/net/URI;)Ljava/nio/file/Path;",
-                "getScheme()Ljava/lang/String;"
-        ));
         addMethods("java.security.BasicPermission", List.of(
                 "<init>(Ljava/lang/String;)V"
         ));
@@ -746,12 +728,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         // Fourth wave — tail of the XML / DOM / SAX surface plus a few remaining JDBC + util
         // leaf methods.
         // ====================================================================================
-        addMethods("java.nio.file.FileSystems", List.of(
-                "getDefault()Ljava/nio/file/FileSystem;"
-        ));
-        addMethods("java.nio.file.Path", List.of(
-                "getFileName()Ljava/nio/file/Path;"
-        ));
         addMethods("java.security.CodeSource", List.of(
                 "getLocation()Ljava/net/URL;"
         ));
@@ -842,9 +818,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         // ====================================================================================
         // Fifth wave — the last of the DOM/SAX/JAXB surface.
         // ====================================================================================
-        addMethods("java.nio.file.FileSystem", List.of(
-                "getPath(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;"
-        ));
         addMethods("java.sql.DatabaseMetaData", List.of(
                 "getDatabaseProductVersion()Ljava/lang/String;"
         ));
@@ -952,10 +925,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         ));
         addMethods("org.xml.sax.Locator", List.of(
                 "getColumnNumber()I"
-        ));
-
-        addMethods("java.nio.file.Files", List.of(
-                "isRegularFile(Ljava/nio/file/Path;[Ljava/nio/file/LinkOption;)Z"
         ));
 
         // ====================================================================================
