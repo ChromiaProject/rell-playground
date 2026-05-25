@@ -77,6 +77,9 @@ val stubs = listOf(
 
     // java.beans — JavaBeans introspection used by jOOQ's record-mapping path.
     Stub("java/beans/ConstructorProperties", isInterface = true),
+    // Jackson's reflection probe walks @Transient; without it, dev-2's `fast=true`
+    // dependency analyser reports "Class java.beans.Transient was not found".
+    Stub("java/beans/Transient", isInterface = true),
 
     // java.sql — JDBC. Referenced by jOOQ everywhere; the no-conn executor throws before any
     // call site is actually exercised at runtime.
@@ -185,9 +188,9 @@ val stubs = listOf(
     Stub("java/lang/ExceptionInInitializerError", isInterface = false),
     Stub("java/lang/IllegalCallerException", isInterface = false),
     Stub("java/lang/InstantiationError", isInterface = false),
-    Stub("java/lang/Module\$ArchivedData", isInterface = false),
+    Stub($$"java/lang/Module$ArchivedData", isInterface = false),
     Stub("java/lang/StackStreamFactory", isInterface = false),
-    Stub("java/lang/StackWalker\$Option", isInterface = false),
+    Stub($$"java/lang/StackWalker$Option", isInterface = false),
     Stub("java/lang/ThreadGroup", isInterface = false),
     Stub("java/lang/TypeNotPresentException", isInterface = false),
     Stub("java/lang/UnsatisfiedLinkError", isInterface = false),
@@ -214,8 +217,8 @@ val stubs = listOf(
 
     // java.util — various reflection / serialisation leaf classes + nested $ classes.
     Stub("java/util/InputMismatchException", isInterface = false),
-    Stub("java/util/Locale\$Builder", isInterface = false),
-    Stub("java/util/Scanner\$PatternLRUCache", isInterface = false),
+    Stub($$"java/util/Locale$Builder", isInterface = false),
+    Stub($$"java/util/Scanner$PatternLRUCache", isInterface = false),
     Stub("java/util/SimpleTimeZone", isInterface = false),
     Stub("java/util/StringJoiner", isInterface = false),
     Stub("java/util/concurrent/ConcurrentLinkedQueue", isInterface = false),
@@ -223,8 +226,8 @@ val stubs = listOf(
     Stub("java/util/concurrent/ConcurrentSkipListMap", isInterface = false),
     Stub("java/util/concurrent/ForkJoinPool", isInterface = false),
     Stub("java/util/concurrent/Helpers", isInterface = false),
-    Stub("java/util/concurrent/LinkedBlockingQueue\$Itr", isInterface = false),
-    Stub("java/util/concurrent/LinkedBlockingQueue\$Node", isInterface = false),
+    Stub($$"java/util/concurrent/LinkedBlockingQueue$Itr", isInterface = false),
+    Stub($$"java/util/concurrent/LinkedBlockingQueue$Node", isInterface = false),
     Stub("java/util/concurrent/StructureViolationException", isInterface = false),
     Stub("java/util/concurrent/atomic/AtomicReferenceArray", isInterface = false),
 
@@ -235,25 +238,25 @@ val stubs = listOf(
     Stub("java/lang/reflect/RecordComponent", isInterface = false),
     Stub("java/lang/reflect/GenericDeclaration", isInterface = true),
     Stub("java/lang/ModuleLayer", isInterface = false),
-    Stub("java/lang/StackStreamFactory\$AbstractStackWalker", isInterface = false),
-    Stub("java/lang/StackStreamFactory\$LiveStackInfoTraverser", isInterface = false),
-    Stub("java/lang/StackStreamFactory\$StackFrameTraverser", isInterface = false),
+    Stub($$"java/lang/StackStreamFactory$AbstractStackWalker", isInterface = false),
+    Stub($$"java/lang/StackStreamFactory$LiveStackInfoTraverser", isInterface = false),
+    Stub($$"java/lang/StackStreamFactory$StackFrameTraverser", isInterface = false),
     Stub("java/net/Inet6Address", isInterface = false),
     Stub("java/nio/MappedByteBuffer", isInterface = false),
     Stub("java/security/BasicPermission", isInterface = false),
     Stub("java/util/concurrent/AbstractExecutorService", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentLinkedQueue\$Itr", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentLinkedQueue\$Node", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentSkipListMap\$EntrySet", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentSkipListMap\$Index", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentSkipListMap\$KeySet", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentSkipListMap\$Node", isInterface = false),
-    Stub("java/util/concurrent/ConcurrentSkipListMap\$Values", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentLinkedQueue$Itr", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentLinkedQueue$Node", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentSkipListMap$EntrySet", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentSkipListMap$Index", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentSkipListMap$KeySet", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentSkipListMap$Node", isInterface = false),
+    Stub($$"java/util/concurrent/ConcurrentSkipListMap$Values", isInterface = false),
     Stub("java/util/concurrent/ConcurrentSkipListSet", isInterface = false),
-    Stub("java/util/concurrent/ForkJoinPool\$1", isInterface = false),
-    Stub("java/util/concurrent/ForkJoinPool\$2", isInterface = false),
-    Stub("java/util/concurrent/ForkJoinPool\$DefaultForkJoinWorkerThreadFactory", isInterface = false),
-    Stub("java/util/concurrent/ForkJoinPool\$WorkQueue", isInterface = false),
+    Stub($$"java/util/concurrent/ForkJoinPool$1", isInterface = false),
+    Stub($$"java/util/concurrent/ForkJoinPool$2", isInterface = false),
+    Stub($$"java/util/concurrent/ForkJoinPool$DefaultForkJoinWorkerThreadFactory", isInterface = false),
+    Stub($$"java/util/concurrent/ForkJoinPool$WorkQueue", isInterface = false),
     Stub("java/util/concurrent/ForkJoinWorkerThread", isInterface = false),
     Stub("java/util/concurrent/LinkedTransferQueue", isInterface = false),
     Stub("java/util/concurrent/ThreadFactory", isInterface = true),
@@ -299,6 +302,9 @@ val stubs = listOf(
     // hits at link time (the runtime path never reaches `LocatorEx.getColumnNumber` because
     // the playground doesn't drive XML config files into jOOQ).
     Stub("org/glassfish/jaxb/core/v2/runtime/unmarshaller/LocatorEx", isInterface = true),
+    // GtvMLEscapeHandler implements this — same WasmGC vtable NPE cause as the Gson pair
+    // above (konsoletyper/teavm#1188 maintainer comment).
+    Stub("org/glassfish/jaxb/core/marshaller/CharacterEscapeHandler", isInterface = true),
     Stub("jakarta/xml/bind/ValidationEventLocator", isInterface = true),
 
     // Seventh wave — leaves of dependencies we excluded at the Gradle level but whose names
@@ -311,6 +317,10 @@ val stubs = listOf(
     Stub("com/beanit/jasn1/ber/types/string/BerUTF8String", isInterface = false),
     Stub("com/google/gson/Gson", isInterface = false),
     Stub("com/google/gson/GsonBuilder", isInterface = false),
+    // GtvAdapter implements these — without them WasmGC's vtable builder NPEs when
+    // wiring the GtvAdapter's interface implementor list (konsoletyper/teavm#1188).
+    Stub("com/google/gson/JsonDeserializer", isInterface = true),
+    Stub("com/google/gson/JsonSerializer", isInterface = true),
     Stub("io/r2dbc/spi/Nullability", isInterface = false),
     Stub("io/r2dbc/spi/R2dbcException", isInterface = false),
     Stub("io/r2dbc/spi/Statement", isInterface = true),
@@ -320,6 +330,8 @@ val stubs = listOf(
     Stub("io/r2dbc/spi/Row", isInterface = true),
     Stub("io/r2dbc/spi/RowMetadata", isInterface = true),
     Stub("io/r2dbc/spi/ColumnMetadata", isInterface = true),
+    // Return type of ColumnMetadata.getType(); dev-2 fast-analysis flags it as missing.
+    Stub("io/r2dbc/spi/Type", isInterface = true),
     Stub("io/r2dbc/spi/Batch", isInterface = true),
     Stub("io/r2dbc/spi/ConnectionFactoryMetadata", isInterface = true),
     Stub("io/r2dbc/spi/Closeable", isInterface = true),
@@ -409,7 +421,7 @@ val generateTeavmStubs by tasks.registering {
     description = "Emits empty stub bytecode for JDK packages TeaVM's classlib omits."
     group = LifecycleBasePlugin.BUILD_GROUP
 
-    inputs.property("stubs", stubs.map { "${it.name}|${it.isInterface}" }.joinToString())
+    inputs.property("stubs", stubs.joinToString { "${it.name}|${it.isInterface}" })
     inputs.property("includes", teavmStubsIncludes.joinToString("\n"))
     outputs.dir(stubsClassesDir)
 
@@ -525,31 +537,25 @@ dependencies {
     teavm(libs.teavm.jso.apis)
 }
 
+// Tensor-probe parameters. Override on the CLI with -Prell.teavm.opt=BALANCED, -Prell.teavm.fast=true.
+val probeOpt: OptimizationLevel = (project.findProperty("rell.teavm.opt") as String?)
+    ?.let { OptimizationLevel.valueOf(it) } ?: OptimizationLevel.NONE
+val probeFast: Boolean = (project.findProperty("rell.teavm.fast") as String?)?.toBoolean() ?: false
+
 teavm {
     all {
         // TeaVM compiles a JVM `main(String[])` entry point. Everything else reachable from
         // it (or from @JSExport methods on the same module) is included.
         mainClass = "com.chromia.rellplayground.PlaygroundJsBridge"
         // Pin every @JSExport-bearing class — without an explicit reference from `main`,
-        // TeaVM's dead-code elimination would drop them before the JSExport transformer
-        // runs. (`fastGlobalAnalysis = true` would skip the slow virtual-call expansion
-        // pass, cutting build time from ~15 min to ~15 s, but it currently aborts with
-        // `IllegalArgumentException: Illegal type signature: [java/lang/Class;` on this
-        // codebase — TeaVM 0.12 bug in the array-of-Class signature path. Until that's
-        // fixed upstream we eat the slow analysis.)
+        // TeaVM's dead-code elimination would drop them before the JSExport transformer runs.
+        fastGlobalAnalysis = probeFast
         preservedClasses.add("com.chromia.rellplayground.PlaygroundJsBridge")
     }
     js {
         // ESM output — the SPA worker imports the generated module directly.
         moduleType = JSModuleType.ES2015
-        // BALANCED — 0.13.1's JS backend handles BALANCED on this codebase (cuts ~17 MB vs
-        // NONE). AGGRESSIVE on 0.13.1 explodes the output to ~297 MB — likely a bug in its
-        // statement deduplication pass; not worth chasing.
-        //
-        // 0.14.x is gated on two upstream NPEs: `ClassInfoGenerator.writeSimpleConstructors`
-        // on the JS backend (any level) and `WasmGCVirtualTableBuilder.addImplementorToInterface`
-        // on the WasmGC backend. See konsoletyper/teavm#1188 + #1189. Revisit when fixed.
-        optimization = OptimizationLevel.BALANCED
+        optimization = probeOpt
         // Run TeaVM in a forked JVM. The classlib + reachability analysis routinely needs many
         // GB of heap on rell-base + its transitive deps; running in-process competes with
         // Gradle's daemon heap. 8 GB is what the slow dependency-propagation pass needs to
@@ -564,6 +570,16 @@ teavm {
         // traces TeaVM emits already carry Kotlin file/line via @SourceFile attributes.
         sourceMap = false
         targetFileName = "rell-playground-bridge.js"
+    }
+    // WasmGC backend probe — exploring whether 0.15.0-dev-N's WasmGC target compiles where
+    // the JS backend currently NPEs (konsoletyper/teavm#1189). Run with ./gradlew :bridge:generateWasmGC.
+    wasmGC {
+        optimization = probeOpt
+        outOfProcess = true
+        processMemory = 8192
+        obfuscated = true
+        sourceMap = false
+        targetFileName = "rell-playground-bridge.wasm"
     }
 }
 

@@ -5,6 +5,7 @@ build/
 .idea/
 *.iml
 local.properties
+.kotlin/
 
 # Node / pnpm
 node_modules/

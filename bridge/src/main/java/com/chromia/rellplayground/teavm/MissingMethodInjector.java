@@ -1084,6 +1084,48 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "getInstance(Ljava/lang/StackWalker$Option;)Ljava/lang/StackWalker;"
         ));
 
+        // ====================================================================================
+        // Eighth wave — methods/classes surfaced by TeaVM 0.15.0-dev-2's fast-analysis
+        // diagnostics. The slow-analysis path on dev-1/dev-2 NPEs in
+        // ClassInfoGenerator.writeSimpleConstructors / ReflectionMetadataGenerator.generate
+        // when these references can't be resolved; the dev-2 fast path reports them
+        // gracefully (#1190 fix).
+        // ====================================================================================
+        addMethods("io.r2dbc.spi.ColumnMetadata", List.of(
+                "getJavaType()Ljava/lang/Class;",
+                "getName()Ljava/lang/String;",
+                "getNullability()Lio/r2dbc/spi/Nullability;",
+                "getPrecision()Ljava/lang/Integer;",
+                "getScale()Ljava/lang/Integer;",
+                "getType()Lio/r2dbc/spi/Type;"
+        ));
+        addMethods("io.r2dbc.spi.Row", List.of(
+                "get(I)Ljava/lang/Object;",
+                "get(ILjava/lang/Class;)Ljava/lang/Object;"
+        ));
+        addMethods("io.r2dbc.spi.Type", List.of(
+                "getName()Ljava/lang/String;"
+        ));
+        addMethods("java.beans.Transient", List.of(
+                "value()Z"
+        ));
+        addMethods("io.r2dbc.spi.RowMetadata", List.of(
+                "getColumnMetadata(I)Lio/r2dbc/spi/ColumnMetadata;",
+                "getColumnMetadatas()Ljava/util/List;"
+        ));
+        addMethods("io.r2dbc.spi.Statement", List.of(
+                "bind(ILjava/lang/Object;)Lio/r2dbc/spi/Statement;"
+        ));
+        addMethods("java.sql.PreparedStatement", List.of(
+                "addBatch()V"
+        ));
+        addMethods("java.sql.Statement", List.of(
+                "clearBatch()V"
+        ));
+        addMethods("java.util.concurrent.atomic.AtomicReferenceArray", List.of(
+                "length()I"
+        ));
+
         // Rt_RellVersion.getBuildProperties() walks Class.getResource + Properties.load to
         // pull the gradle-git-properties output from `rell-base-maven.properties`. None of
         // those APIs exist in TeaVM's classlib; on the JVM they're how the playground gets
