@@ -113,26 +113,7 @@ dependencies {
     // transitive copy.
     implementation(files(teavmStubsJar.flatMap { it.archiveFile }))
 
-    // rell-api-base transitively pulls in postchain + jOOQ + jaxb + jasn1 + r2dbc + postgres +
-    // graalvm-truffle + gson — none of which the playground code path touches at runtime, and
-    // each of which TeaVM would otherwise spend its reachability budget on. Excluding them at
-    // the Gradle level keeps the analyser tractable.
-    configurations.named("implementation").configure {
-        exclude(group = "com.sun.xml.bind")
-        exclude(group = "jakarta.xml.bind")
-        exclude(group = "jakarta.activation")
-        exclude(group = "org.eclipse.angus")
-        exclude(group = "com.beanit", module = "jasn1")
-        exclude(group = "org.graalvm.truffle")
-        exclude(group = "org.graalvm.polyglot")
-        exclude(group = "org.graalvm.sdk")
-        exclude(group = "net.postchain.rell", module = "runtime-truffle")
-        exclude(group = "io.r2dbc")
-        exclude(group = "org.reactivestreams")
-        exclude(group = "org.postgresql")
-        exclude(group = "com.google.code.gson")
-    }
-    implementation("net.postchain.rell:rell-api-base:0.16.0-SNAPSHOT")
+    implementation("net.postchain.rell:rell-base:0.16.0-SNAPSHOT")
 
     compileOnly("org.teavm:teavm-jso:0.15.0-dev-2")
     compileOnly("org.teavm:teavm-core:0.15.0-dev-2")
