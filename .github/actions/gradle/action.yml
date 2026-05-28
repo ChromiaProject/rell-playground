@@ -1,0 +1,48 @@
+name: Gradle (retry on transient resolution)
+description: >
+  Runs ./gradlew, retrying ONLY when the failure looks like transient artifact resolution.
+  TeaVM 0.15.0-dev-N is served solely from teavm.org's dev Maven repo, which intermittently
+  returns an HTML error page instead of the real POM/JAR — Gradle then fails parsing HTML as
+  XML ("Already seen doctype") and reports the plugin as not found. A re-run almost always
+  gets the correct artifact. Genuine compile/test failures (e.g. a TeaVM BuildException) do
+  not match the transient patterns and fail fast — they are never retried or masked.
+
+inputs:
+  arguments:
+    description: Arguments passed to ./gradlew (space-separated).
+    required: true
+  attempts:
+    description: Maximum number of attempts.
+    required: false
+    default: "3"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GRADLE_ARGS: ${{ inputs.arguments }}
+        MAX_ATTEMPTS: ${{ inputs.attempts }}
+      run: |
+        set -uo pipefail
+        log="$(mktemp)"
+        # Markers of a transient infra/resolution failure — NOT of a real build error.
+        transient='Already seen doctype|Could not resolve|could not resolve plugin|was not found in any of the following sources|Read timed out|Connection (reset|timed out|refused)|Premature end of Content-Length|Received fatal alert|status code: 50[0-9]|Gateway Time-?out|Service Unavailable'
+        for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+          echo "::group::Gradle attempt $attempt/$MAX_ATTEMPTS — ./gradlew $GRADLE_ARGS"
+          ./gradlew $GRADLE_ARGS 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          [ "$status" -eq 0 ] && exit 0
+          if ! grep -Eq "$transient" "$log"; then
+            echo "::error::Gradle failed with a non-transient error (exit $status). Not retrying." >&2
+            exit "$status"
+          fi
+          if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+            backoff=$((attempt * 15))
+            echo "::warning::Transient artifact-resolution failure; retrying in ${backoff}s (attempt $attempt/$MAX_ATTEMPTS)." >&2
+            sleep "$backoff"
+          fi
+        done
+        echo "::error::Gradle still failing after $MAX_ATTEMPTS attempts (transient resolution)." >&2
+        exit 1

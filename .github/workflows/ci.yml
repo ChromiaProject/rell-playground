@@ -44,7 +44,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build bridge JS (TeaVM)
-        run: ./gradlew :bridge:build
+        uses: ./.github/actions/gradle
+        with:
+          arguments: ":bridge:build"
 
       - name: Upload bridge JS
         uses: actions/upload-artifact@v4
@@ -76,10 +78,14 @@ jobs:
       # node-gradle plugin downloads its pinned Node version into web/build/nodejs, so no
       # actions/setup-node step is needed. We just need a JDK to drive Gradle.
       - name: Run survival kit (Vitest)
-        run: ./gradlew :web:vitestRun
+        uses: ./.github/actions/gradle
+        with:
+          arguments: ":web:vitestRun"
 
       - name: Build SPA
-        run: ./gradlew :web:assemble
+        uses: ./.github/actions/gradle
+        with:
+          arguments: ":web:assemble"
 
       - name: Upload SPA dist
         uses: actions/upload-artifact@v4
