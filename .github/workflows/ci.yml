@@ -26,6 +26,16 @@ concurrency:
 
 env:
   GRADLE_OPTS: "-Xmx4g -Dorg.gradle.caching=true -Dorg.gradle.parallel=true"
+  # TeaVM's generateJavaScript runs in a JVM the plugin forks itself (outOfProcess = true), and
+  # the only knob the plugin exposes on that fork is heap (processMemory → -Xmx). Its dependency
+  # analysis is deeply recursive and intermittently overflows the JVM's default ~512K-1M thread
+  # stack — surfacing as `BuildException: java.lang.StackOverflowError`. The recursion depth
+  # varies run-to-run (hash ordering), so the *same* commit passes one run and fails the next.
+  # org.gradle.jvmargs can't fix it (that tunes the Gradle daemon, not the fork); the fork is a
+  # child process that inherits the environment, so JAVA_TOOL_OPTIONS is the only way to enlarge
+  # its stack from outside the plugin. Set at workflow level so the daemon carries it from its
+  # first start and every forked TeaVM build inherits it.
+  JAVA_TOOL_OPTIONS: "-Xss64m"
 
 jobs:
   bridge:
