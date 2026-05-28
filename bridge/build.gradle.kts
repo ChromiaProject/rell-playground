@@ -293,6 +293,7 @@ val stubs = listOf(
     Stub("org/xml/sax/ErrorHandler", isInterface = true),
     Stub("org/xml/sax/Locator", isInterface = true),
     Stub("org/xml/sax/helpers/DefaultHandler", isInterface = false),
+    Stub("org/xml/sax/ext/LexicalHandler", isInterface = true),
     Stub("java/nio/file/FileStore", isInterface = false),
     Stub("java/nio/file/WatchService", isInterface = true),
     Stub("java/util/logging/Handler", isInterface = false),

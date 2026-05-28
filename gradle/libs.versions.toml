@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.0"
-rell = "0.16.0-SNAPSHOT"
+rell = "0.16.0"
 teavm = "0.15.0-dev-2"
 node-gradle = "7.1.0"
 

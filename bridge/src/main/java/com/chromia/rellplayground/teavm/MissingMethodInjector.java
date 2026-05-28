@@ -1126,6 +1126,39 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "length()I"
         ));
 
+        // ====================================================================================
+        // Ninth wave — methods surfaced by the dev-2 diagnostics after the diagnostics-driven
+        // stub pass. All on stubs already shipped in `bridge/build.gradle.kts`; the dependency
+        // analyser just hadn't seen these specific JDBC large-result / SAX property paths yet.
+        // ====================================================================================
+        addMethods("java.sql.Blob", List.of(
+                "getBinaryStream()Ljava/io/InputStream;"
+        ));
+        addMethods("java.sql.DatabaseMetaData", List.of(
+                "getSchemas(Ljava/lang/String;Ljava/lang/String;)Ljava/sql/ResultSet;"
+        ));
+        addMethods("java.sql.PreparedStatement", List.of(
+                "executeLargeUpdate()J",
+                "getLargeUpdateCount()J",
+                "setLargeMaxRows(J)V",
+                "setObject(ILjava/lang/Object;I)V"
+        ));
+        // PreparedStatement extends Statement; the analyser also probes the parent interface
+        // for the same large-result methods (Statement defines them as throwing defaults).
+        addMethods("java.sql.Statement", List.of(
+                "getLargeUpdateCount()J",
+                "setLargeMaxRows(J)V"
+        ));
+        addMethods("java.sql.SQLException", List.of(
+                "<init>(Ljava/lang/Throwable;)V"
+        ));
+        addMethods("java.sql.SQLXML", List.of(
+                "getString()Ljava/lang/String;"
+        ));
+        addMethods("javax.xml.parsers.SAXParser", List.of(
+                "setProperty(Ljava/lang/String;Ljava/lang/Object;)V"
+        ));
+
         // Rt_RellVersion.getBuildProperties() walks Class.getResource + Properties.load to
         // pull the gradle-git-properties output from `rell-base-maven.properties`. None of
         // those APIs exist in TeaVM's classlib; on the JVM they're how the playground gets
