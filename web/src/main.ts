@@ -167,7 +167,10 @@ async function main(): Promise<void> {
   const rell = m?.[1]?.trim();
   versionTag.textContent = rell ? `rell ${rell}` : version;
   versionTag.title = version;
-  output.appendLine(`Ready — ${version}`, "system");
+  // In Output, surface only the Rell version — postchain, branch, commit, and the
+  // dirty flag are noise here. The full descriptor stays on `title=`.
+  const shown = m ? `rell: ${rell}` : version;
+  output.appendLine(`Ready — ${shown}`, "system");
 
   // Phased indeterminate progress bar during Run/SQL/REPL execution. The worker call
   // (`bridge.runFile` etc.) is one synchronous JVM-in-JS block so we can't get genuine
