@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.3.0"
 rell = "0.16.0"
-teavm = "0.15.0-dev-2"
+teavm = "0.15.0-dev-3"
 node-gradle = "7.1.0"
 
 [libraries]
@@ -14,6 +14,7 @@ rell-gtx = { module = "net.postchain.rell:rell-gtx", version.ref = "rell" }
 teavm-jso = { module = "org.teavm:teavm-jso", version.ref = "teavm" }
 teavm-jso-apis = { module = "org.teavm:teavm-jso-apis", version.ref = "teavm" }
 teavm-core = { module = "org.teavm:teavm-core", version.ref = "teavm" }
+teavm-extension-spi = { module = "org.teavm:teavm-extension-spi", version.ref = "teavm" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

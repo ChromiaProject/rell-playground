@@ -26,5 +26,8 @@ public final class RellPlaygroundPlugin implements TeaVMPlugin {
     @Override
     public void install(TeaVMHost host) {
         host.add(new MissingMethodInjector());
+        host.add(new GenericParametersNormalizer());
+        host.add(new AbstractMethodBodyStubber());
+        host.add(new ReflectionTargetPreserver());
     }
 }

@@ -371,59 +371,17 @@ val stubs = listOf(
 
 val stubsClassesDir = layout.buildDirectory.dir("generated/teavm-stubs/classes")
 
-// TeaVM's classlib jar ships `META-INF/teavm.properties` with the directive
-// `includePackageHierarchy|java=false` — meaning every classpath entry whose class names start
-// with `java.` is *excluded* by default (TeaVM expects to provide them itself, via the
-// `org.teavm.classlib.java.*` → `java.*` renaming). Our stubs jar carries an additional
-// `META-INF/teavm.properties` that *re-includes* the specific java.* / jakarta.* / javax.*
-// sub-packages we ship stubs for, so the renamer doesn't drop them on the floor.
-val teavmStubsIncludes = listOf(
-    // Mapping rules so my generated `org.teavm.classlib.<pkg>.T<Class>` stubs surface as the
-    // requested `<pkg>.<Class>` classes. teavm-classlib already ships these for `java.*`; the
-    // jakarta.* and javax.* lines below add equivalent prefixes for the packages it doesn't
-    // cover. Package-hierarchy rules cascade to sub-packages.
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.jakarta=T",
-    "mapPackageHierarchy|org.teavm.classlib.jakarta=jakarta",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.javax=T",
-    "mapPackageHierarchy|org.teavm.classlib.javax=javax",
-    // org.w3c.* and org.xml.* — same shape, distinct package roots.
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.org.w3c=T",
-    "mapPackageHierarchy|org.teavm.classlib.org.w3c=org.w3c",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.org.xml=T",
-    "mapPackageHierarchy|org.teavm.classlib.org.xml=org.xml",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.org.glassfish=T",
-    "mapPackageHierarchy|org.teavm.classlib.org.glassfish=org.glassfish",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.jakarta.xml=T",
-    "mapPackageHierarchy|org.teavm.classlib.jakarta.xml=jakarta.xml",
-    // com.beanit, com.google.gson, io.r2dbc — leaf libraries we excluded from the dep graph;
-    // these prefixes let the stubs surface where TeaVM expects to find the original classes.
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.com.beanit=T",
-    "mapPackageHierarchy|org.teavm.classlib.com.beanit=com.beanit",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.com.google=T",
-    "mapPackageHierarchy|org.teavm.classlib.com.google=com.google",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.io.r2dbc=T",
-    "mapPackageHierarchy|org.teavm.classlib.io.r2dbc=io.r2dbc",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.org.jooq=T",
-    "mapPackageHierarchy|org.teavm.classlib.org.jooq=org.jooq",
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.org.reactivestreams=T",
-    "mapPackageHierarchy|org.teavm.classlib.org.reactivestreams=org.reactivestreams",
-    // SLF4J shim: org.teavm.classlib.org.slf4j.TLoggerFactory → org.slf4j.LoggerFactory.
-    // Replaces SLF4J's real LoggerFactory whose provider-discovery static init would
-    // otherwise abort the moment any rell-base `companion object: KLogging()` resolves.
-    "stripPrefixFromPackageHierarchyClasses|org.teavm.classlib.org.slf4j=T",
-    "mapPackageHierarchy|org.teavm.classlib.org.slf4j=org.slf4j",
-    // teavm-classlib excludes javax.xml from project-classpath lookups by default
-    // (`includePackageHierarchy|javax.xml=false`); the rename above re-enables it for the
-    // sub-tree we ship stubs for.
-    "includePackageHierarchy|javax.xml=true",
-)
+// The `org.teavm.classlib.<pkg>.T<Class>` stubs below are surfaced as the requested
+// `<pkg>.<Class>` classes by RellPlaygroundSubstitutionPolicy (a SubstitutionPolicy SPI). Up to
+// 0.14 this remapping was driven by `mapPackageHierarchy` / `stripPrefixFromPackageHierarchyClasses`
+// directives in a `META-INF/teavm.properties` we shipped in this jar; 0.15.0-dev-3 deleted the
+// classpath property-renamer from teavm-core, so the rules now live in that policy class instead.
 
 val generateTeavmStubs by tasks.registering {
     description = "Emits empty stub bytecode for JDK packages TeaVM's classlib omits."
     group = LifecycleBasePlugin.BUILD_GROUP
 
     inputs.property("stubs", stubs.joinToString { "${it.name}|${it.isInterface}" })
-    inputs.property("includes", teavmStubsIncludes.joinToString("\n"))
     outputs.dir(stubsClassesDir)
 
     doLast {
@@ -465,11 +423,6 @@ val generateTeavmStubs by tasks.registering {
             classFile.parentFile.mkdirs()
             classFile.writeBytes(cw.toByteArray())
         }
-
-        // teavm.properties: re-includes the java.* / jakarta.* / javax.* sub-packages we ship.
-        val propsFile = outDir.resolve("META-INF/teavm.properties")
-        propsFile.parentFile.mkdirs()
-        propsFile.writeText(teavmStubsIncludes.joinToString("\n", postfix = "\n"))
     }
 }
 
@@ -521,27 +474,26 @@ dependencies {
 
     implementation(libs.rell.api.base)
 
-    // teavm-jso brings the @JSExport annotation used to expose static Kotlin methods to JS.
-    // The annotation has no runtime semantics on JVM; TeaVM consumes it at compile time.
     compileOnly(libs.teavm.jso)
-
-    // teavm-core: needed to compile the TeaVMPlugin / ClassHolderTransformer at
-    // com.chromia.rellplayground.teavm.*. Marked `compileOnly` because the plugin classes are
-    // loaded by TeaVM's own daemon (which already has teavm-core on its classpath) — shipping
-    // teavm-core itself into the compiled output would bloat the JS bundle with classes TeaVM
-    // never reaches at runtime.
     compileOnly(libs.teavm.core)
+    compileOnly(libs.teavm.extension.spi)
 
-    // TeaVM classpath. teavm(...) adds the entry to the configuration TeaVM compiles from
-    // (in addition to runtimeClasspath). jsoApis provides DOM + JSON types — we use a small
-    // subset (e.g. nothing yet) but it's required for the JS frontend's helpers.
     teavm(libs.teavm.jso.apis)
 }
 
-// Tensor-probe parameters. Override on the CLI with -Prell.teavm.opt=BALANCED, -Prell.teavm.fast=true.
+// TeaVM codegen config. Overridable on the CLI (-Prell.teavm.opt=..., -Prell.teavm.fast=...,
+// -Prell.teavm.obf=...) but the defaults below are the only combination that produces a *working*
+// bridge on 0.15.0-dev-3:
+//   - fastGlobalAnalysis = true is mandatory: precise analysis (fast=false) over-prunes
+//     reflectively-reached init and emits JS that references eliminated symbols, so every
+//     fast=false build crashes at runtime (C_LibBridge.instance uninitialized / ReferenceError).
+//   - With fastGlobalAnalysis on, the optimizer's size/codegen passes are bypassed, so NONE /
+//     BALANCED / AGGRESSIVE yield a byte-identical artifact — the opt level only changes build
+//     time (AGGRESSIVE is just slower for the same output). BALANCED is the fastest viable build.
 val probeOpt: OptimizationLevel = (project.findProperty("rell.teavm.opt") as String?)
-    ?.let { OptimizationLevel.valueOf(it) } ?: OptimizationLevel.NONE
-val probeFast: Boolean = (project.findProperty("rell.teavm.fast") as String?)?.toBoolean() ?: false
+    ?.let { OptimizationLevel.valueOf(it) } ?: OptimizationLevel.BALANCED
+val probeFast: Boolean = (project.findProperty("rell.teavm.fast") as String?)?.toBoolean() ?: true
+val probeObfuscated: Boolean = (project.findProperty("rell.teavm.obf") as String?)?.toBoolean() ?: true
 
 teavm {
     all {
@@ -578,7 +530,7 @@ teavm {
         optimization = probeOpt
         outOfProcess = true
         processMemory = 8192
-        obfuscated = true
+        obfuscated = probeObfuscated
         sourceMap = false
         targetFileName = "rell-playground-bridge.wasm"
     }
