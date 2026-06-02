@@ -32,9 +32,7 @@ class BufferedReplChannel : ReplOutputChannel {
         first = true
     }
 
-    val printer: Rt_Printer = object : Rt_Printer {
-        override fun print(str: String) = appendEvent("stdout", "text" to str)
-    }
+    val printer: Rt_Printer = Rt_Printer { str -> appendEvent("stdout", "text" to str) }
 
     override fun printInfo(msg: String) = appendEvent("stdout", "text" to msg)
 
@@ -43,6 +41,7 @@ class BufferedReplChannel : ReplOutputChannel {
 
     override fun printCompilerMessage(message: C_Message) {
         val severity = if (message.type == C_MessageType.ERROR) "error" else "warning"
+
         appendEvent(
             "compiler",
             "severity" to severity,
@@ -57,25 +56,21 @@ class BufferedReplChannel : ReplOutputChannel {
         appendEvent("runtimeError", "message" to e.message, "stack" to stack)
     }
 
-    override fun printPlatformRuntimeError(e: Throwable) {
-        appendEvent(
-            "runtimeError",
-            "message" to "platform error: ${e.message ?: e::class.simpleName.orEmpty()}",
-            "stack" to e.stackTraceToString(),
-        )
-    }
+    override fun printPlatformRuntimeError(e: Throwable) = appendEvent(
+        "runtimeError",
+        "message" to "platform error: ${e.message ?: e::class.simpleName.orEmpty()}",
+        "stack" to e.stackTraceToString(),
+    )
 
     override fun setValueFormat(format: ReplValueFormat) {
         this.format = format
     }
 
     override fun printValue(value: Rt_Value) {
-        val text = ReplValueFormatter.format(value, format) ?: return
-        appendEvent("value", "text" to text)
+        appendEvent("value", "text" to (ReplValueFormatter.format(value, format) ?: return))
     }
 
-    override fun printControl(code: String, msg: String) =
-        appendEvent("control", "code" to code, "message" to msg)
+    override fun printControl(code: String, msg: String) = appendEvent("control", "code" to code, "message" to msg)
 
     /**
      * Record one SQL statement that Rell handed to its [SqlExecutor]. Called
@@ -94,31 +89,33 @@ class BufferedReplChannel : ReplOutputChannel {
         if (!first) events.append(',')
         first = false
         events.append("{\"type\":").append(jsonString(type))
+
         for ((k, v) in fields) {
             events.append(',').append(jsonString(k)).append(':').append(jsonString(v))
         }
+
         events.append('}')
     }
 
-    private fun jsonString(s: String): String {
-        val out = StringBuilder(s.length + 2)
-        out.append('"')
+    private fun jsonString(s: String): String = buildString(s.length + 2) {
+        append('"')
+
         for (ch in s) {
             when (ch) {
-                '\\' -> out.append("\\\\")
-                '"' -> out.append("\\\"")
-                '\n' -> out.append("\\n")
-                '\r' -> out.append("\\r")
-                '\t' -> out.append("\\t")
-                '\b' -> out.append("\\b")
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                '\b' -> append("\\b")
                 else -> if (ch.code < 0x20) {
-                    out.append("\\u").append(ch.code.toString(16).padStart(4, '0'))
+                    append("\\u").append(ch.code.toString(16).padStart(4, '0'))
                 } else {
-                    out.append(ch)
+                    append(ch)
                 }
             }
         }
-        out.append('"')
-        return out.toString()
+
+        append('"')
     }
 }

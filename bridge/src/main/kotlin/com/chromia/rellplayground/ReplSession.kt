@@ -72,6 +72,7 @@ class ReplSession {
             return channel.finish(ok = false)
         }
         channel.reset()
+
         return try {
             interpreter.execute(command)
             channel.finish(ok = true)
@@ -80,6 +81,4 @@ class ReplSession {
             channel.finish(ok = false)
         }
     }
-
-    fun mustQuit(): Boolean = interpreter?.mustQuit() == true
 }

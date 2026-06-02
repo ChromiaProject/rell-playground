@@ -32,9 +32,7 @@ import java.sql.Connection
 class CapturingSqlManager(private val channel: BufferedReplChannel) : AbstractSqlManager() {
     override val hasConnection = false
 
-    override fun <T> execute0(tx: Boolean, code: (SqlExecutor) -> T): T {
-        return code(CapturingSqlExecutor(channel))
-    }
+    override fun <T> execute0(tx: Boolean, code: (SqlExecutor) -> T): T = code(CapturingSqlExecutor(channel))
 }
 
 private class CapturingSqlExecutor(private val channel: BufferedReplChannel) : SqlExecutor() {
@@ -46,17 +44,11 @@ private class CapturingSqlExecutor(private val channel: BufferedReplChannel) : S
         throw Rt_Exception.common("no_sql", "No database connection")
     }
 
-    override fun execute(sql: String) {
-        channel.appendSql(sql)
-    }
-
-    override fun execute(sql: String, preparator: SqlPreparator) {
-        channel.appendSql(sql)
-    }
+    override fun execute(sql: String) = channel.appendSql(sql)
+    override fun execute(sql: String, preparator: SqlPreparator) = channel.appendSql(sql)
 
     override fun executeQuery(sql: String, preparator: SqlPreparator, consumer: (ResultSetRow) -> Unit) {
         channel.appendSql(sql)
-        // Empty result set: invoke the consumer zero times.
     }
 }
 

@@ -6,7 +6,8 @@ package com.chromia.rellplayground
 
 import net.postchain.rell.base.runtime.Rt_RellVersion
 
-/**
+
+object PlaygroundBridge {/**
  * JVM-side surface that the SPA worker calls into via CheerpJ's Java↔JS bridge.
  * Every method returns a JSON-encoded string so the cross-runtime payload is
  * simple to parse on the SPA side.
@@ -21,14 +22,11 @@ import net.postchain.rell.base.runtime.Rt_RellVersion
  * around between `replExecute` calls.
  */
 @Suppress("unused")
-object PlaygroundBridge {
-    private val sessions = HashMap<Int, ReplSession>()
+    private val sessions: MutableMap<Int, ReplSession> = HashMap()
     private var nextId = 1
 
     @JvmStatic
-    fun version(): String {
-        return Rt_RellVersion.getInstance().buildDescriptor
-    }
+    fun version(): String = Rt_RellVersion.getInstance().buildDescriptor
 
     /**
      * Plain one-file mode: run the whole source as a single REPL command in a
@@ -38,9 +36,7 @@ object PlaygroundBridge {
      * use [runModule] for those.
      */
     @JvmStatic
-    fun runFile(code: String): String {
-        return ReplSession().execute(code)
-    }
+    fun runFile(code: String): String = ReplSession().execute(code)
 
     /**
      * SQL dry-run mode: treat the user's source as Rell module `main` (root),
@@ -50,9 +46,7 @@ object PlaygroundBridge {
      * the SQL postchain *would* issue is surfaced to the SQL pane.
      */
     @JvmStatic
-    fun runModule(code: String): String {
-        return ModuleSession(code).runMain()
-    }
+    fun runModule(code: String): String = ModuleSession(code).runMain()
 
     /** Returns a session id, or `-1` if the REPL failed to initialise. */
     @JvmStatic
@@ -69,6 +63,7 @@ object PlaygroundBridge {
     fun replExecute(sessionId: Int, command: String): String {
         val session = sessions[sessionId]
             ?: return """{"ok":false,"events":[{"type":"runtimeError","message":"invalid REPL session: $sessionId"}]}"""
+
         val result = session.execute(command)
         if (session.mustQuit()) sessions.remove(sessionId)
         return result
