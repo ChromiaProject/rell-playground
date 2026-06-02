@@ -40,7 +40,7 @@ val viteBuild by tasks.registering(PnpmTask::class) {
     args = listOf("run", "build")
 
     // Drive incremental rebuild from source — Vite handles its own cache, but Gradle needs
-    // an inputs/outputs declaration to participate in --no-daemon and CI caching.
+    // an inputs/outputs declaration to participate in caching.
     inputs.dir(layout.projectDirectory.dir("src"))
     inputs.dir(layout.projectDirectory.dir("public"))
     inputs.file(layout.projectDirectory.file("index.html"))
@@ -74,10 +74,8 @@ val typecheck by tasks.registering(PnpmTask::class) {
     outputs.upToDateWhen { true }
 }
 
-// Vitest integration suite over the TeaVM-compiled bridge JS — loads the 80 MB bridge module
-// once per worker and asserts on the JSON envelopes its @JSExport methods return. Bumps the
-// V8 heap to 8 GB via NODE_OPTIONS because the bridge JS is large enough that the default
-// 4 GB ceiling OOMs Vitest's transform step.
+// Vitest integration suite over the TeaVM-compiled bridge JS — loads the bridge module
+// once per worker and asserts on the JSON envelopes its @JSExport methods return.
 val vitestRun by tasks.registering(PnpmTask::class) {
     description = "Runs the bridge survival/integration suite (Vitest) against the TeaVM JS."
     group = LifecycleBasePlugin.VERIFICATION_GROUP
