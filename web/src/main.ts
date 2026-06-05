@@ -179,24 +179,36 @@ async function main(): Promise<void> {
   // a trivial `print` round-trips in ~200 ms, a fact(10) in ~500 ms, and a SQL dry-run
   // with several entities takes 2–4 s on first hit.
   let phaseTimer: ReturnType<typeof setInterval> | null = null;
+  let showTimer: ReturnType<typeof setTimeout> | null = null;
   const phaseLabel = (ms: number): string => {
     if (ms < 600) return "Compiling Rell…";
     if (ms < 2500) return "Running…";
     return "Working…";
   };
   const stopPhases = (): void => {
+    if (showTimer !== null) {
+      clearTimeout(showTimer);
+      showTimer = null;
+    }
     if (phaseTimer !== null) {
       clearInterval(phaseTimer);
       phaseTimer = null;
     }
   };
+  // Defer showing the bar: trivial runs finish in ~200 ms, so flashing it on then
+  // immediately off just makes the topbar twitch. Only reveal it once a run has
+  // clearly outlasted that window; fast runs never paint it at all.
+  const SHOW_DELAY_MS = 250;
   const startPhases = (): void => {
     stopPhases();
     const t0 = performance.now();
-    progress.show(phaseLabel(0));
-    phaseTimer = setInterval(() => {
-      progress.set(0, 0, phaseLabel(performance.now() - t0));
-    }, 150);
+    showTimer = setTimeout(() => {
+      showTimer = null;
+      progress.show(phaseLabel(performance.now() - t0));
+      phaseTimer = setInterval(() => {
+        progress.set(0, 0, phaseLabel(performance.now() - t0));
+      }, 150);
+    }, SHOW_DELAY_MS);
   };
 
   const busy = (b: boolean): void => {
