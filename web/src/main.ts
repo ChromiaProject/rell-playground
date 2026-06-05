@@ -34,6 +34,30 @@ function saveMode(mode: Mode): void {
   try { localStorage.setItem(MODE_STORAGE_KEY, mode); } catch { /* private mode */ }
 }
 
+// The editor keeps a separate, independently-persisted buffer per editable mode:
+// editing the Run program and then visiting SQL dry-run shows SQL's own code, and
+// coming back to Run restores the edited Run program. REPL has no buffer — it shares
+// (and writes through to) whichever buffer was active when it was entered.
+// `file` reuses the original single-buffer key so existing saved programs survive.
+type BufferMode = "file" | "sql";
+const BUFFER_KEYS: Record<BufferMode, string> = {
+  file: "rell-playground:buffer",
+  sql: "rell-playground:buffer:sql",
+};
+
+function bufferExample(m: BufferMode): string {
+  return m === "sql" ? SQL_EXAMPLE : DEFAULT_FILE;
+}
+
+function readBuffer(m: BufferMode): string {
+  try { return localStorage.getItem(BUFFER_KEYS[m]) ?? bufferExample(m); }
+  catch { return bufferExample(m); }
+}
+
+function saveBuffer(m: BufferMode, value: string): void {
+  try { localStorage.setItem(BUFFER_KEYS[m], value); } catch { /* private mode */ }
+}
+
 function readTheme(): Theme {
   const attr = document.documentElement.getAttribute("data-theme");
   return attr === "dark" ? "dark" : "light";
@@ -87,8 +111,15 @@ async function main(): Promise<void> {
   const output = new OutputPanel(outputEl);
   const sql = createSqlPanel(sqlEl);
   const progress = createProgressBar();
-  const editor = await mountEditor(editorEl, initial);
+  // A shared buffer from the URL hash seeds (and persists into) the Run buffer;
+  // otherwise the editor opens on the Run mode's saved buffer.
+  if (initial !== undefined) saveBuffer("file", initial);
+  const editor = await mountEditor(editorEl, initial ?? readBuffer("file"));
   const replInput = mountReplInput(replInputEl);
+  // Which buffer the editor is currently bound to for persistence. Editing in any
+  // mode writes through to this buffer; switching modes re-points it.
+  let bufferMode: BufferMode = "file";
+  editor.onChange((v) => saveBuffer(bufferMode, v));
 
   // Output / SQL tab switching.
   const setTab = (which: "output" | "sql"): void => {
@@ -263,19 +294,6 @@ async function main(): Promise<void> {
     setTab("output");
   };
 
-  // Swap the editor's contents to a mode's example, but only if the user
-  // hasn't typed their own program (i.e. the buffer still holds the *other*
-  // mode's pristine default or is empty). Never clobbers real edits.
-  const KNOWN_DEFAULTS = new Set([DEFAULT_FILE.trim(), SQL_EXAMPLE.trim(), ""]);
-  const maybeLoadExample = (m: Mode): void => {
-    if (m === "repl") return; // REPL shares whatever's in the editor
-    const want = m === "sql" ? SQL_EXAMPLE : DEFAULT_FILE;
-    const cur = editor.getValue().trim();
-    if (cur !== want.trim() && KNOWN_DEFAULTS.has(cur)) {
-      editor.setValue(want);
-    }
-  };
-
   let mode: Mode = "file";
   applyTabsForMode(mode);
 
@@ -297,6 +315,9 @@ async function main(): Promise<void> {
     // mode's panels. Halt the worker so the new mode starts clean.
     cancelInFlight(`Cancelled: switched to ${next} mode.`);
     if (mode === "repl") await replMode.leave();
+    // Persist the outgoing editor content to whichever buffer it's bound to before
+    // swapping in the incoming mode's buffer below.
+    saveBuffer(bufferMode, editor.getValue());
     mode = next;
     currentMode = next;
     saveMode(mode);
@@ -315,7 +336,12 @@ async function main(): Promise<void> {
     // No editor in REPL mode → Run button has nothing meaningful to do.
     runBtn.hidden = mode === "repl";
     applyTabsForMode(mode);
-    maybeLoadExample(mode);
+    // Load the incoming mode's own buffer. REPL keeps the current editor content
+    // (and its existing buffer binding) — it shares whatever's already shown.
+    if (mode !== "repl") {
+      bufferMode = mode;
+      editor.setValue(readBuffer(mode));
+    }
     if (mode === "repl") {
       await replMode.enter();
       replInput.focus();
@@ -373,8 +399,10 @@ async function main(): Promise<void> {
   // Restore last-used mode from localStorage. We defer this until after bridge.init()
   // succeeded so REPL's `enter()` (which calls replCreate on the worker) has something
   // to talk to. setMode is a no-op when the saved mode equals the current default.
+  // Skip restoration when a shared program was loaded from the hash — that program
+  // lives in the Run buffer, so we stay in Run mode to show it.
   const saved = readSavedMode();
-  if (saved !== null && saved !== mode) {
+  if (initial === undefined && saved !== null && saved !== mode) {
     void setMode(saved);
   }
 }

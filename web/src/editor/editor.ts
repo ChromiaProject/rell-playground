@@ -4,8 +4,6 @@
 import * as monaco from "monaco-editor";
 import { registerRellLanguage } from "./rell-language.ts";
 
-const STORAGE_KEY = "rell-playground:buffer";
-
 export interface EditorHandle {
   getValue(): string;
   setValue(value: string): void;
@@ -89,7 +87,9 @@ export async function mountEditor(container: HTMLElement, initial?: string): Pro
 
   registerRellLanguage(monaco);
 
-  const startText = initial ?? localStorage.getItem(STORAGE_KEY) ?? DEFAULT_FILE;
+  // Persistence is mode-aware and owned by the caller (main.ts keeps a separate
+  // buffer per mode); the editor itself is a dumb widget over whatever text it's given.
+  const startText = initial ?? DEFAULT_FILE;
 
   // Match Monaco's theme to the document's data-theme. The HTML head's inline
   // bootstrap sets it before this code runs, so the editor opens on the right
@@ -119,7 +119,6 @@ export async function mountEditor(container: HTMLElement, initial?: string): Pro
   const listeners: Array<(value: string) => void> = [];
   editor.onDidChangeModelContent(() => {
     const v = editor.getValue();
-    localStorage.setItem(STORAGE_KEY, v);
     for (const l of listeners) l(v);
   });
 
@@ -179,19 +178,20 @@ export function mountReplInput(container: HTMLElement): ReplInputHandle {
     monaco.editor.setTheme(monacoTheme());
   });
 
-  // Enter submits; Shift+Enter inserts a newline (Monaco's default Enter binding).
-  // `keybindingContext: "editorTextFocus && !suggestWidgetVisible"` matches the
-  // standard Enter behaviour without stealing it when a completion is open.
-  editor.addCommand(
-    monaco.KeyCode.Enter,
-    () => {
-      const value = editor.getValue();
-      if (!value.trim()) return;
-      editor.setValue("");
-      for (const l of submitListeners) l(value);
-    },
-    "editorTextFocus && !suggestWidgetVisible",
-  );
+  // Enter submits; Shift+Enter inserts a newline. We hook the editor's own
+  // onKeyDown rather than editor.addCommand: standalone editors share one global
+  // keybinding service, so a global Enter command bound here would also fire in the
+  // main code editor (its `editorTextFocus` is true whenever it's focused) and
+  // swallow newlines there. onKeyDown is per-instance and only fires for this prompt.
+  editor.onKeyDown((e) => {
+    if (e.keyCode !== monaco.KeyCode.Enter || e.shiftKey) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const value = editor.getValue();
+    if (!value.trim()) return;
+    editor.setValue("");
+    for (const l of submitListeners) l(value);
+  });
 
   return {
     getValue: () => editor.getValue(),
