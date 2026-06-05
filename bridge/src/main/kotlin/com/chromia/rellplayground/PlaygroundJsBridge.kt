@@ -30,17 +30,9 @@ fun runModule(code: String): String = PlaygroundBridge.runModule(code)
 fun replCreate(): Int = PlaygroundBridge.replCreate()
 
 @JSExport
-fun replExecute(sessionId: Int, command: String): String =
-    PlaygroundBridge.replExecute(sessionId, command)
+fun replExecute(sessionId: Int, command: String): String = PlaygroundBridge.replExecute(sessionId, command)
 
 @JSExport
-fun replDispose(sessionId: Int) {
-    PlaygroundBridge.replDispose(sessionId)
-}
+fun replDispose(sessionId: Int) = PlaygroundBridge.replDispose(sessionId)
 
-/**
- * TeaVM compilation root. No-op: every `@JSExport` function above is its own additional root
- * in the reachability analyser, so the JS module exposes them directly. `main` is never
- * called from JS.
- */
 fun main() {}

@@ -21,25 +21,30 @@ export function createFileMode(
   // in (rather than building a fresh one here) keeps panel routing in a
   // single place.
   onEvent: (e: StreamEvent) => void,
-  clearPanels: () => void,
+  // Bracket the run with a reconciling render pass instead of a clear: an
+  // identical re-run rewrites no DOM (no flicker). beginRender opens the pass,
+  // endRender drops any lines left over from a longer previous run.
+  beginRender: () => void,
+  endRender: () => void,
 ): FileMode {
   return {
     async run() {
       const code = editor.getValue();
       if (!code.trim()) return;
-      clearPanels();
+      beginRender();
       setBusy(true);
       try {
         await runner(code, onEvent);
       } catch (e) {
         // Bridge resets (Stop / mode switch) reject pending calls with BridgeCancelled.
-        // The cancellation site already cleared / announced — no need to surface an error.
+        // The cancellation site already announced the halt — no need to surface an error.
         if (e instanceof BridgeCancelled) return;
         output.appendLine(
           `error: ${e instanceof Error ? e.message : String(e)}`,
           "error",
         );
       } finally {
+        endRender();
         setBusy(false);
       }
     },

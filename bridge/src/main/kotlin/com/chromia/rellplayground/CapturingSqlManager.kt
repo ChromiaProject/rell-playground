@@ -12,7 +12,7 @@ import net.postchain.rell.base.sql.SqlPreparator
 import java.sql.Connection
 
 /**
- * A "dry-run" [SqlManager]: records every SQL string Rell hands the executor
+ * A "dry-run" [net.postchain.rell.base.sql.SqlManager]: records every SQL string Rell hands the executor
  * into [channel] (rendered in the SPA's SQL pane) and then lets execution
  * *continue* against an empty result set, instead of failing like
  * [net.postchain.rell.base.sql.NoConnSqlManager].

@@ -41,29 +41,29 @@ class ModuleSession(userCode: String) {
     // [ReplSession] for the same workaround on REPL mode.
     private val interpreter: ReplInterpreter? = run {
         val compilerOptions = C_CompilerOptions.DEFAULT
-        val globalCtx = RellApiBaseUtils.createGlobalContext(
-            compilerOptions,
-            typeCheck = false,
-            outPrinter = channel.printer,
-            logPrinter = channel.printer,
-        )
+
         val config = ReplInterpreterConfig(
             compilerOptions = compilerOptions,
             sourceDir = sourceDir,
             module = mainModule,
-            rtGlobalCtx = globalCtx,
+            rtGlobalCtx = RellApiBaseUtils.createGlobalContext(
+                compilerOptions,
+                typeCheck = false,
+                outPrinter = channel.printer,
+                logPrinter = channel.printer,
+            ),
             sqlMgr = CapturingSqlManager(channel),
             projExt = NullReplInterpreterProjExt,
             outChannel = channel,
             moduleArgsSource = Rt_ModuleArgsSource.NULL,
         )
-        var result: ReplInterpreter? = null
+
         repeat(3) {
             channel.reset()
-            result = ReplInterpreter.create(config)
-            if (result != null) return@run result
+            ReplInterpreter.create(config)?.let { return@run it }
         }
-        result
+
+        null
     }
 
     /**
@@ -76,6 +76,7 @@ class ModuleSession(userCode: String) {
             channel.printCompilerError("module:not_ready", "Module 'main' failed to compile (see messages above)")
             return channel.finish(ok = false)
         }
+
         return try {
             // The interpreter has already loaded `main` (its constructor ran
             // executeCode("", forceSqlUpdate = true) which emits DDL). If the

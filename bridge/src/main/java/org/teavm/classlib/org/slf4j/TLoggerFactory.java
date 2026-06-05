@@ -15,7 +15,7 @@ import org.slf4j.Logger;
  * scan fails, every subsequent `LoggerFactory.getLogger(...)` throws IllegalStateException
  * — which surfaces in the Rell REPL the first time any rell-base `companion object:
  * KLogging()` resolves its logger.
- *
+ * <p>
  * teavm-classlib's existing T-prefix renamer rewrites this class to `org.slf4j.LoggerFactory`
  * (see `mapPackageHierarchy|org.teavm.classlib.org.slf4j=org.slf4j` in our
  * `META-INF/teavm.properties`), so SLF4J's real implementation never makes it into the

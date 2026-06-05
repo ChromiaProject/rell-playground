@@ -15,7 +15,7 @@ import net.postchain.rell.base.runtime.Rt_ModuleArgsSource
 /**
  * Holds a [ReplInterpreter] plus the [BufferedReplChannel] that captures
  * one command's worth of output. Database-less by construction:
- * [NoConnSqlManager] + [NullReplInterpreterProjExt].
+ * [net.postchain.rell.base.sql.NoConnSqlManager] + [NullReplInterpreterProjExt].
  */
 class ReplSession {
     private val channel = BufferedReplChannel()
@@ -38,27 +38,24 @@ class ReplSession {
             outPrinter = channel.printer,
             logPrinter = channel.printer,
         )
+
         val config = ReplInterpreterConfig(
             compilerOptions = compilerOptions,
             sourceDir = C_SourceDir.EMPTY,
             module = null,
             rtGlobalCtx = globalCtx,
-            // CapturingSqlManager records every SQL string Rell hands to its
-            // executor before the executor throws "no_sql". Browser mode has
-            // no Postgres so DB-touching code still fails at runtime — but the
-            // jOOQ-generated SQL surfaces in the SPA's SQL pane.
             sqlMgr = CapturingSqlManager(channel),
             projExt = NullReplInterpreterProjExt,
             outChannel = channel,
             moduleArgsSource = Rt_ModuleArgsSource.NULL,
         )
-        var result: ReplInterpreter? = null
+
         repeat(3) {
             channel.reset()
-            result = ReplInterpreter.create(config)
-            if (result != null) return@run result
+            ReplInterpreter.create(config)?.let { return@run it }
         }
-        result // null — channel still holds the last attempt's events
+
+        null // null — channel still holds the last attempt's events
     }
 
     val ready: Boolean get() = interpreter != null
@@ -71,6 +68,7 @@ class ReplSession {
             channel.printCompilerError("repl:not_ready", "REPL failed to initialise")
             return channel.finish(ok = false)
         }
+
         channel.reset()
 
         return try {

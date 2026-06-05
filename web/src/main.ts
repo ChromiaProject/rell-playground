@@ -195,15 +195,19 @@ async function main(): Promise<void> {
       phaseTimer = null;
     }
   };
-  // Defer showing the bar: trivial runs finish in ~200 ms, so flashing it on then
-  // immediately off just makes the topbar twitch. Only reveal it once a run has
-  // clearly outlasted that window; fast runs never paint it at all.
+  // Defer ALL busy chrome — the progress bar, the disabled Run button, and the
+  // enabled Stop button — behind one timer. Trivial runs finish in ~200 ms, so
+  // flashing any of it on then immediately off just makes the topbar and buttons
+  // twitch. Only reveal once a run has clearly outlasted the window; fast runs
+  // never paint it at all and the buttons hold their resting state.
   const SHOW_DELAY_MS = 250;
   const startPhases = (): void => {
     stopPhases();
     const t0 = performance.now();
     showTimer = setTimeout(() => {
       showTimer = null;
+      runBtn.disabled = true;
+      stopBtn.disabled = false;
       progress.show(phaseLabel(performance.now() - t0));
       phaseTimer = setInterval(() => {
         progress.set(0, 0, phaseLabel(performance.now() - t0));
@@ -211,12 +215,16 @@ async function main(): Promise<void> {
     }, SHOW_DELAY_MS);
   };
 
+  // Source of truth for "a run is in flight" — independent of the button DOM,
+  // which now lags behind by SHOW_DELAY_MS.
+  let isBusy = false;
   const busy = (b: boolean): void => {
-    runBtn.disabled = b;
-    stopBtn.disabled = !b;
+    isBusy = b;
     if (b) startPhases();
     else {
       stopPhases();
+      runBtn.disabled = false;
+      stopBtn.disabled = true;
       progress.hide();
     }
   };
@@ -225,12 +233,20 @@ async function main(): Promise<void> {
     output.clear();
     sql.clear();
   };
+  const beginRender = (): void => {
+    output.beginRender();
+    sql.beginRender();
+  };
+  const endRender = (): void => {
+    output.endRender();
+    sql.endRender();
+  };
   // Plain "Run" → bridge.runFile (REPL-on-one-command). SQL dry-run →
   // bridge.runModule (module compile + SQL capture). Same UI machinery.
   const fileMode = createFileMode(
-    (code, onEvent) => bridge.runFile(code, onEvent), editor, output, busy, route, clearPanels);
+    (code, onEvent) => bridge.runFile(code, onEvent), editor, output, busy, route, beginRender, endRender);
   const sqlMode = createFileMode(
-    (code, onEvent) => bridge.runModule(code, onEvent), editor, output, busy, route, clearPanels);
+    (code, onEvent) => bridge.runModule(code, onEvent), editor, output, busy, route, beginRender, endRender);
   const replMode = createReplMode(bridge, editor, output, busy, route, clearPanels);
 
   // Which output tabs a mode exposes:
@@ -268,7 +284,7 @@ async function main(): Promise<void> {
   // is to terminate the worker (which `bridge.reset` does) and respawn. Any pending
   // promises reject with "worker terminated"; their try/finally blocks fire setBusy(false).
   const cancelInFlight = (reason: string): void => {
-    if (!runBtn.disabled) return; // not busy → nothing to cancel
+    if (!isBusy) return; // not busy → nothing to cancel
     bridge.reset();
     output.appendLine(reason, "system");
     busy(false);
@@ -315,6 +331,7 @@ async function main(): Promise<void> {
   }
 
   const runCurrent = (): void => {
+    if (isBusy) return; // re-entrancy guard — the Run button no longer disables synchronously
     if (mode === "file") void fileMode.run();
     else if (mode === "sql") void sqlMode.run();
     else void replMode.runEditor();
