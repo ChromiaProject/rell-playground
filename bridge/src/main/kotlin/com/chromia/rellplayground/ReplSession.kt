@@ -81,4 +81,6 @@ class ReplSession {
             channel.finish(ok = false)
         }
     }
+
+    fun mustQuit(): Boolean = interpreter?.mustQuit() == true
 }
