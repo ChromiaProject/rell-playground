@@ -1,22 +1,21 @@
-// Minimal Monaco language definition for Rell. Adapted from rell-vscode's
-// TextMate grammar; covers keywords, types, comments, strings, numbers,
-// operators. Good enough for highlighting; not a full LSP.
+// Minimal Monaco language definition for Rell. Keyword and literal sets follow
+// the rell3 grammar (rell-base/frontend: Rell.g4 + parser/grammar.kt); types are
+// the built-in library type names. Good enough for highlighting; not a full LSP.
 
 import type * as Monaco from "monaco-editor";
 
 const KEYWORDS = [
-  "abstract", "and", "as", "break", "byte_array", "by", "continue", "create",
-  "decimal", "delete", "else", "entity", "enum", "external", "false", "for",
-  "function", "guard", "if", "import", "in", "include", "integer", "interface",
-  "limit", "list", "log", "map", "module", "mount", "namespace", "not", "null",
-  "object", "offset", "operation", "or", "override", "print", "query", "range",
-  "return", "rowid", "set", "sort", "struct", "test", "text", "true", "tuple",
-  "update", "val", "var", "virtual", "when", "where", "while",
+  "abstract", "and", "break", "class", "continue", "create", "delete", "else",
+  "entity", "enum", "false", "for", "function", "guard", "if", "import", "in",
+  "include", "index", "key", "limit", "module", "mutable", "namespace", "not",
+  "null", "object", "offset", "operation", "or", "override", "query", "record",
+  "return", "struct", "true", "update", "val", "var", "virtual", "when", "while",
 ];
 
 const TYPES = [
-  "boolean", "integer", "decimal", "text", "byte_array", "rowid", "json", "unit",
-  "big_integer", "timestamp", "list", "set", "map", "range", "tuple", "gtv",
+  "boolean", "integer", "big_integer", "decimal", "text", "byte_array", "rowid",
+  "range", "json", "gtv", "unit", "signer", "guid", "list", "set", "map",
+  "timestamp", "name", "pubkey", "tuid",
 ];
 
 export function registerRellLanguage(monaco: typeof Monaco): void {
@@ -53,13 +52,17 @@ export function registerRellLanguage(monaco: typeof Monaco): void {
     keywords: KEYWORDS,
     typeKeywords: TYPES,
     operators: [
-      "=", ">", "<", "!", "~", "?", ":", "==", "<=", ">=", "!=", "&&", "||",
-      "++", "--", "+", "-", "*", "/", "%", "&", "|", "^", "@", "@?", "@*", "@+",
+      "=", ">", "<", "!", "~", "?", ":", "==", "<=", ">=", "!=", "===", "!==",
+      "+=", "-=", "*=", "/=", "%=", "++", "--", "+", "-", "*", "/", "%", "&",
+      "^", "->", "?.", "?:", "??", "!!", "@", "@?", "@*", "@+",
     ],
     symbols: /[=><!~?:&|+\-*/^%@]+/,
-    escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4})/,
+    escapes: /\\(?:[btnfr"'\\]|u[0-9A-Fa-f]{4})/,
     tokenizer: {
       root: [
+        // Byte-array literals (x'ff00' / x"ff00") before identifiers, else `x` lexes as one.
+        [/x'([0-9a-fA-F]{2})*'/, "number.hex"],
+        [/x"([0-9a-fA-F]{2})*"/, "number.hex"],
         [
           /[a-zA-Z_]\w*/,
           {
@@ -71,11 +74,16 @@ export function registerRellLanguage(monaco: typeof Monaco): void {
           },
         ],
         { include: "@whitespace" },
+        // Annotations (@log, @test, @mount(...)); at-expressions put `?`/`*`/`+`
+        // or whitespace after `@`, so `@ident` is unambiguous.
+        [/@[a-zA-Z_]\w*/, "annotation"],
         [/[{}()[\]]/, "@brackets"],
+        [/\$/, "variable"],
         [/@symbols/, { cases: { "@operators": "operator", "@default": "" } }],
-        [/\d+\.\d+([eE][-+]?\d+)?/, "number.float"],
-        [/0[xX][0-9a-fA-F]+/, "number.hex"],
-        [/\d+/, "number"],
+        [/\d*\.\d+([eE][-+]?\d+)?/, "number.float"],
+        [/\d+[eE][-+]?\d+/, "number.float"],
+        [/0[xX][0-9a-fA-F]+L?/, "number.hex"],
+        [/\d+L?/, "number"],
         [/[;,.]/, "delimiter"],
         [/"([^"\\]|\\.)*$/, "string.invalid"],
         [/'([^'\\]|\\.)*$/, "string.invalid"],
