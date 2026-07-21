@@ -46,7 +46,15 @@ java {
 // Each stub is an empty interface (for types that look like interfaces) or an empty class with
 // a public no-arg constructor (for the rest). TeaVM dead-code-eliminates them aggressively.
 
-data class Stub(val name: String, val isInterface: Boolean = true)
+// Static methods a stub must declare because a reachable call site names them; the body is
+// `return null` — safe because the call sites are never exercised in the browser path.
+data class StubMethod(val name: String, val descriptor: String)
+
+data class Stub(
+    val name: String,
+    val isInterface: Boolean = true,
+    val staticMethods: List<StubMethod> = emptyList(),
+)
 
 // Generated stub class names are rewritten from `<pkg>/X` (or `<pkg>/X$Inner`) into
 // `org/teavm/classlib/<pkg>/TX` (or `org/teavm/classlib/<pkg>/TX$Inner`) so teavm-classlib's
@@ -205,7 +213,15 @@ val stubs = listOf(
 
     // java.net — Jackson/jOOQ network code paths.
     Stub("java/net/InetAddress", isInterface = false),
-    Stub("java/net/InetSocketAddress", isInterface = false),
+    // Rell 0.16.1's json parsing (Rt_JsonValue.parse → ObjectMapper.readTree) makes Jackson's
+    // FromStringDeserializer._inetSocketAddress reachable, which calls createUnresolved.
+    Stub(
+        "java/net/InetSocketAddress",
+        isInterface = false,
+        staticMethods = listOf(
+            StubMethod("createUnresolved", "(Ljava/lang/String;I)Ljava/net/InetSocketAddress;"),
+        ),
+    ),
     Stub("java/net/JarURLConnection", isInterface = false),
     Stub("java/net/NetPermission", isInterface = false),
     Stub("java/net/Socket", isInterface = false),
@@ -381,7 +397,12 @@ val generateTeavmStubs by tasks.registering {
     description = "Emits empty stub bytecode for JDK packages TeaVM's classlib omits."
     group = LifecycleBasePlugin.BUILD_GROUP
 
-    inputs.property("stubs", stubs.joinToString { "${it.name}|${it.isInterface}" })
+    inputs.property(
+        "stubs",
+        stubs.joinToString {
+            "${it.name}|${it.isInterface}|${it.staticMethods.joinToString(";") { m -> "${m.name}${m.descriptor}" }}"
+        },
+    )
     outputs.dir(stubsClassesDir)
 
     doLast {
@@ -416,6 +437,25 @@ val generateTeavmStubs by tasks.registering {
                 )
                 mv.visitInsn(org.objectweb.asm.Opcodes.RETURN)
                 mv.visitMaxs(1, 1)
+                mv.visitEnd()
+            }
+            for (method in stub.staticMethods) {
+                val returnType = org.objectweb.asm.Type.getReturnType(method.descriptor)
+                require(returnType.sort == org.objectweb.asm.Type.OBJECT) {
+                    "Stub methods only support reference return types: ${stub.name}.${method.name}"
+                }
+                val mv = cw.visitMethod(
+                    org.objectweb.asm.Opcodes.ACC_PUBLIC or org.objectweb.asm.Opcodes.ACC_STATIC,
+                    method.name,
+                    method.descriptor,
+                    null,
+                    null,
+                )
+                mv.visitCode()
+                mv.visitInsn(org.objectweb.asm.Opcodes.ACONST_NULL)
+                mv.visitInsn(org.objectweb.asm.Opcodes.ARETURN)
+                val argSlots = org.objectweb.asm.Type.getArgumentsAndReturnSizes(method.descriptor) shr 2
+                mv.visitMaxs(1, argSlots)
                 mv.visitEnd()
             }
             cw.visitEnd()
