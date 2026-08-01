@@ -51,7 +51,7 @@ jobs:
           java-version: "21"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Build bridge JS (TeaVM)
         uses: ./.github/actions/gradle
@@ -83,7 +83,7 @@ jobs:
           java-version: "21"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # node-gradle plugin downloads its pinned Node version into web/build/nodejs, so no
       # actions/setup-node step is needed. We just need a JDK to drive Gradle.
