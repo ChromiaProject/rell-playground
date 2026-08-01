@@ -41,11 +41,11 @@ jobs:
   bridge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Java 21 — TeaVM's tooling requires 21 (its ASM cannot read class files compiled with
       # Java 25's bytecode).
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -59,7 +59,7 @@ jobs:
           arguments: ":bridge:build"
 
       - name: Upload bridge JS
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bridge-js
           path: web/public/teavm/
@@ -69,15 +69,15 @@ jobs:
     needs: bridge
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download bridge JS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bridge-js
           path: web/public/teavm/
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -98,7 +98,7 @@ jobs:
           arguments: ":web:assemble"
 
       - name: Upload SPA dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spa-dist
           path: web/dist/
@@ -116,16 +116,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download SPA dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: spa-dist
           path: dist
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with: { path: dist }
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
