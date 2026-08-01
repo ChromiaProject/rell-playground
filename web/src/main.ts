@@ -13,7 +13,7 @@ import { createReplMode } from "./modes/repl-mode.ts";
 import { createProgressBar } from "./progress.ts";
 import { createSqlPanel } from "./sql-panel.ts";
 import type { StreamEvent } from "./bridge/client.ts";
-import { decode, encode } from "./util/share.ts";
+import { decodeShare, encodeShare } from "./util/share.ts";
 
 type Mode = "file" | "sql" | "repl";
 
@@ -102,19 +102,30 @@ async function main(): Promise<void> {
   });
 
   // Optional shared buffer from URL hash. Overrides the localStorage cache.
+  // A `sql:` prefix targets the SQL dry-run mode instead of Run; bare hashes
+  // stay Run-mode so pre-prefix share links keep working.
   let initial: string | undefined;
+  let initialMode: BufferMode = "file";
   if (location.hash.length > 1) {
-    const decoded = await decode(location.hash.slice(1));
-    if (decoded !== null) initial = decoded;
+    const shared = await decodeShare(location.hash.slice(1));
+    if (shared !== null) {
+      initial = shared.text;
+      initialMode = shared.mode;
+    }
   }
 
   const output = new OutputPanel(outputEl);
   const sql = createSqlPanel(sqlEl);
   const progress = createProgressBar();
-  // A shared buffer from the URL hash seeds (and persists into) the Run buffer;
-  // otherwise the editor opens on the Run mode's saved buffer.
-  if (initial !== undefined) saveBuffer("file", initial);
-  const editor = await mountEditor(editorEl, initial ?? readBuffer("file"));
+  // A shared buffer from the URL hash seeds (and persists into) its target
+  // mode's buffer; otherwise the editor opens on the Run mode's saved buffer.
+  // For a sql-mode share the editor still mounts on the Run buffer — the
+  // setMode("sql") call after bridge init swaps the shared program in.
+  if (initial !== undefined) saveBuffer(initialMode, initial);
+  const editor = await mountEditor(
+    editorEl,
+    initialMode === "file" && initial !== undefined ? initial : readBuffer("file"),
+  );
   const replInput = mountReplInput(replInputEl);
   // Which buffer the editor is currently bound to for persistence. Editing in any
   // mode writes through to this buffer; switching modes re-points it.
@@ -376,7 +387,8 @@ async function main(): Promise<void> {
   });
 
   shareBtn.addEventListener("click", async () => {
-    const encoded = await encode(editor.getValue());
+    // Sharing from SQL dry-run keeps the recipient in SQL dry-run.
+    const encoded = await encodeShare(editor.getValue(), mode === "sql" ? "sql" : "file");
     const url = `${location.origin}${location.pathname}#${encoded}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -399,10 +411,13 @@ async function main(): Promise<void> {
   // Restore last-used mode from localStorage. We defer this until after bridge.init()
   // succeeded so REPL's `enter()` (which calls replCreate on the worker) has something
   // to talk to. setMode is a no-op when the saved mode equals the current default.
-  // Skip restoration when a shared program was loaded from the hash — that program
-  // lives in the Run buffer, so we stay in Run mode to show it.
+  // Skip restoration when a shared program was loaded from the hash — we open the
+  // mode the share link targets instead. A sql-mode share needs an explicit switch
+  // here (the shared program was seeded into the SQL buffer above).
   const saved = readSavedMode();
-  if (initial === undefined && saved !== null && saved !== mode) {
+  if (initial !== undefined) {
+    if (initialMode !== mode) void setMode(initialMode);
+  } else if (saved !== null && saved !== mode) {
     void setMode(saved);
   }
 }

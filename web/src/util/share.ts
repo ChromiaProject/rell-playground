@@ -1,6 +1,33 @@
 // Share-via-URL. We gzip + base64url the buffer into the location hash
 // so the playground stays static-only. CompressionStream is available
 // in every modern browser; no fallback.
+//
+// Wire format (see /CLAUDE.md — frozen backward-compat contract): the hash is
+// base64url(gzip(utf8 source)), optionally preceded by a mode envelope. `sql:`
+// targets SQL dry-run; a bare payload is a Run-mode share. The prefix can never
+// collide with a payload because `:` is outside the base64url alphabet.
+
+export type ShareMode = "file" | "sql";
+
+const SQL_PREFIX = "sql:";
+
+export async function encodeShare(text: string, mode: ShareMode): Promise<string> {
+  const prefix = mode === "sql" ? SQL_PREFIX : "";
+  return prefix + (await encode(text));
+}
+
+export async function decodeShare(
+  hash: string,
+): Promise<{ text: string; mode: ShareMode } | null> {
+  let mode: ShareMode = "file";
+  let payload = hash;
+  if (hash.startsWith(SQL_PREFIX)) {
+    mode = "sql";
+    payload = hash.slice(SQL_PREFIX.length);
+  }
+  const text = await decode(payload);
+  return text === null ? null : { text, mode };
+}
 
 export async function encode(text: string): Promise<string> {
   const enc = new TextEncoder().encode(text);
