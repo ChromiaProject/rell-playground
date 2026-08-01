@@ -393,7 +393,7 @@ val stubsClassesDir = layout.buildDirectory.dir("generated/teavm-stubs/classes")
 // directives in a `META-INF/teavm.properties` we shipped in this jar; 0.15.0-dev-3 deleted the
 // classpath property-renamer from teavm-core, so the rules now live in that policy class instead.
 
-val generateTeavmStubs by tasks.registering {
+val generateTeavmStubs = tasks.register("generateTeavmStubs") {
     description = "Emits empty stub bytecode for JDK packages TeaVM's classlib omits."
     group = LifecycleBasePlugin.BUILD_GROUP
 
@@ -467,7 +467,7 @@ val generateTeavmStubs by tasks.registering {
 }
 
 // Pack the stubs into a JAR so we can prepend it to the TeaVM classpath.
-val teavmStubsJar by tasks.registering(Jar::class) {
+val teavmStubsJar = tasks.register<Jar>("teavmStubsJar") {
     description = "Packages TeaVM JDK-stub bytecode into a JAR."
     group = LifecycleBasePlugin.BUILD_GROUP
     dependsOn(generateTeavmStubs)
@@ -578,7 +578,7 @@ teavm {
 
 // Mirror the generated JS into web/public so the SPA dev server / Vite build can serve it
 // without dancing through bridge's build dir.
-val copyTeavmToWeb by tasks.registering(Copy::class) {
+val copyTeavmToWeb = tasks.register<Copy>("copyTeavmToWeb") {
     group = LifecycleBasePlugin.BUILD_GROUP
     description = "Copies the TeaVM-generated JS module into web/public for the SPA to serve."
     dependsOn(tasks.generateJavaScript)

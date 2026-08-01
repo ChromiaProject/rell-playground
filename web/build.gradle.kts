@@ -27,12 +27,12 @@ node {
 // The bridge's TeaVM output is copied into web/public/teavm by :bridge:build. Wire it as an
 // explicit Gradle dependency so `:web:assemble` triggers a fresh JS build, and `pnpm run dev`
 // sees the latest bridge module without manual coordination.
-val bridgeJsReady by tasks.registering {
+val bridgeJsReady = tasks.register("bridgeJsReady") {
     description = "Ensures the bridge's TeaVM JS module is fresh under web/public/teavm/."
     dependsOn(":bridge:copyTeavmToWeb")
 }
 
-val viteBuild by tasks.registering(PnpmTask::class) {
+val viteBuild = tasks.register<PnpmTask>("viteBuild") {
     description = "Builds the production SPA bundle into web/dist/."
     group = LifecycleBasePlugin.BUILD_GROUP
     dependsOn(tasks.pnpmInstall)
@@ -51,7 +51,7 @@ val viteBuild by tasks.registering(PnpmTask::class) {
     outputs.dir(layout.projectDirectory.dir("dist"))
 }
 
-val viteDev by tasks.registering(PnpmTask::class) {
+val viteDev = tasks.register<PnpmTask>("viteDev") {
     description = "Starts the Vite dev server on http://localhost:5173/."
     group = "application"
     dependsOn(tasks.pnpmInstall)
@@ -61,7 +61,7 @@ val viteDev by tasks.registering(PnpmTask::class) {
     // as "UP-TO-DATE" on subsequent invocations).
 }
 
-val typecheck by tasks.registering(PnpmTask::class) {
+val typecheck = tasks.register<PnpmTask>("typecheck") {
     description = "Runs the TypeScript type-checker over the SPA sources."
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(tasks.pnpmInstall)
@@ -76,7 +76,7 @@ val typecheck by tasks.registering(PnpmTask::class) {
 
 // Vitest integration suite over the TeaVM-compiled bridge JS — loads the bridge module
 // once per worker and asserts on the JSON envelopes its @JSExport methods return.
-val vitestRun by tasks.registering(PnpmTask::class) {
+val vitestRun = tasks.register<PnpmTask>("vitestRun") {
     description = "Runs the bridge survival/integration suite (Vitest) against the TeaVM JS."
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(tasks.pnpmInstall)
