@@ -246,6 +246,32 @@ body {
   border-left: 1px solid var(--border);
 }
 
+/* Page zoom shrinks the CSS viewport, and none of the topbar groups can
+   compress, so even ~110% zoom used to dump the actions onto a second row.
+   Tighten spacing first, then drop the version tag, and only wrap as the
+   last resort. */
+@media (max-width: 1060px) {
+  .topbar {
+    gap: 0.5rem 0.75rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .mode-switch button,
+  .actions button:not(.theme-toggle) {
+    padding: 0.4rem 0.55rem;
+  }
+
+  .actions {
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 880px) {
+  .version-tag {
+    display: none;
+  }
+}
+
 .layout {
   flex: 1 1 auto;
   display: grid;
