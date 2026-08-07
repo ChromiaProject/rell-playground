@@ -12,12 +12,12 @@
     "test": "node --max-old-space-size=8192 node_modules/vitest/vitest.mjs run --reporter=verbose"
   },
   "dependencies": {
-    "monaco-editor": "0.52.0"
+    "monaco-editor": "0.56.0"
   },
   "devDependencies": {
-    "@types/node": "22.18.0",
-    "typescript": "6.0.3",
-    "vite": "8.0.14",
-    "vitest": "3.2.4"
+    "@types/node": "22.20.1",
+    "typescript": "7.0.2",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
   }
 }

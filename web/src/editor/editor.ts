@@ -69,11 +69,11 @@ query main() {
 export async function mountEditor(container: HTMLElement, initial?: string): Promise<EditorHandle> {
   // Vite-native Monaco workers: each `?worker` import bundles the matching language service
   // as a separate ESM worker chunk. Monaco picks one via the `label` from the language id.
-  const editorWorker = (await import("monaco-editor/esm/vs/editor/editor.worker.js?worker")).default;
-  const jsonWorker = (await import("monaco-editor/esm/vs/language/json/json.worker.js?worker")).default;
-  const cssWorker = (await import("monaco-editor/esm/vs/language/css/css.worker.js?worker")).default;
-  const htmlWorker = (await import("monaco-editor/esm/vs/language/html/html.worker.js?worker")).default;
-  const tsWorker = (await import("monaco-editor/esm/vs/language/typescript/ts.worker.js?worker")).default;
+  const editorWorker = (await import("monaco-editor/editor/editor.worker.js?worker")).default;
+  const jsonWorker = (await import("monaco-editor/language/json/json.worker.js?worker")).default;
+  const cssWorker = (await import("monaco-editor/language/css/css.worker.js?worker")).default;
+  const htmlWorker = (await import("monaco-editor/language/html/html.worker.js?worker")).default;
+  const tsWorker = (await import("monaco-editor/language/typescript/ts.worker.js?worker")).default;
 
   (self as unknown as { MonacoEnvironment?: { getWorker(moduleId: string, label: string): Worker } }).MonacoEnvironment = {
     getWorker(_moduleId: string, label: string): Worker {

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import { resolve } from "node:path";
 
 // Vite drives both dev (HMR over native ESM) and prod (Rollup bundle). The SPA has two
@@ -50,16 +50,29 @@ export default defineConfig({
     },
   },
   resolve: {
-    // Resolve the bare `import * as monaco from "monaco-editor"` to its ESM bundle
-    // entrypoint. The alias must be exact-match (regex with `$` anchor) so deep imports
-    // like `monaco-editor/esm/vs/editor/editor.worker.js?worker` aren't rewritten into a
-    // nonsensical doubled path.
+    // Resolve the bare `import * as monaco from "monaco-editor"` to the slim editor API
+    // (the package's root export pulls in every language). Exact-match (`$` anchor) so
+    // subpath imports like `monaco-editor/editor/editor.worker.js?worker` aren't rewritten,
+    // and an absolute path because rolldown rejects bare-specifier replacements.
     alias: [
       {
         find: /^monaco-editor$/,
-        replacement: "monaco-editor/esm/vs/editor/editor.api.js",
+        replacement: resolve(
+          __dirname,
+          "node_modules/monaco-editor/esm/vs/editor/editor.api.js",
+        ),
       },
     ],
+  },
+  test: {
+    server: {
+      deps: {
+        // The TeaVM bridge is a ~40 MB generated file; running it through the test
+        // transform pipeline blows up, and it needs no transformation — import it
+        // natively via Node instead.
+        external: [/rell-playground-bridge\.js$/],
+      },
+    },
   },
   optimizeDeps: {
     // Pre-bundle Monaco. The alias above rewrites `monaco-editor` → the ESM api.js entry,

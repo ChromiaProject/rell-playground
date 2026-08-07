@@ -9,12 +9,10 @@ description = "SPA frontend. node-gradle drives pnpm install + Vite; output land
 
 node {
     download = true
-    version = "22.13.0"
+    version = "22.23.2"
     distBaseUrl = "https://nodejs.org/dist"
 
-    // pnpm: faster, content-addressable installs and a single canonical lockfile. node-gradle
-    // downloads pnpm itself when `download = true`, mirroring how it handles npm.
-    pnpmVersion = "10.20.0"
+    pnpmVersion = "11.20.0"
 
     // node-gradle defaults to <project-build>/nodejs, but pinning to a per-project location lets
     // .gitignore catch the directory cleanly and makes `git clean -fdx` predictable.

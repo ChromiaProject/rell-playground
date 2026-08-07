@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.0"
+kotlin = "2.4.10"
 rell = "0.16.6"
 teavm = "0.15.0"
 node-gradle = "7.1.0"
