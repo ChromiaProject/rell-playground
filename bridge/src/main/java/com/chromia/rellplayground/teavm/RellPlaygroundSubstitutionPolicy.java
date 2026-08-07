@@ -1,8 +1,9 @@
 package com.chromia.rellplayground.teavm;
 
-import java.util.function.Predicate;
 import org.teavm.extension.spi.substitution.SimpleSubstitutionPolicy;
 import org.teavm.extension.spi.substitution.SubstitutionSink;
+
+import java.util.function.Predicate;
 
 /**
  * Redirects the handful of non-{@code java.*} packages we ship empty stubs for to our
@@ -46,7 +47,7 @@ public class RellPlaygroundSubstitutionPolicy extends SimpleSubstitutionPolicy {
             inAnyRoot = inAnyRoot.or(inPackage(ROOTS[i], true));
         }
         sink.selectClasses(inAnyRoot)
-                .packagePrefix("org.teavm.classlib.")
-                .simpleNamePrefix("T");
+            .packagePrefix("org.teavm.classlib.")
+            .simpleNamePrefix("T");
     }
 }

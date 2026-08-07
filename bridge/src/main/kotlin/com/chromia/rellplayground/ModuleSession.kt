@@ -31,6 +31,7 @@ import net.postchain.rell.base.runtime.Rt_ModuleArgsSource
 class ModuleSession(userCode: String) {
     private val channel = BufferedReplChannel()
     private val sourceDir: C_SourceDir = C_SourceDir.mapDirOf(mapOf(MAIN_FILE to userCode))
+
     // `main.rell` at the source-dir root maps to the EMPTY/root module,
     // *not* a module literally named "main". (Path-to-module follows the
     // dir layout: foo/bar.rell -> module foo.bar, main.rell -> root.)

@@ -106,92 +106,28 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         // java.lang.Class — JDK 17+ reflective additions not in TeaVM-classlib's TClass.
         addMethods("java.lang.Class", List.of(
                 "arrayType()Ljava/lang/Class;",
-                "descriptorString()Ljava/lang/String;",
-                "getDeclaredClasses()[Ljava/lang/Class;",
                 "getEnclosingConstructor()Ljava/lang/reflect/Constructor;",
                 "getEnclosingMethod()Ljava/lang/reflect/Method;",
                 "getGenericInterfaces()[Ljava/lang/reflect/Type;",
                 "getGenericSuperclass()Ljava/lang/reflect/Type;",
-                "getModule()Ljava/lang/Module;",
                 "getPackageName()Ljava/lang/String;",
                 "getRecordComponents()[Ljava/lang/reflect/RecordComponent;",
                 "getResource(Ljava/lang/String;)Ljava/net/URL;",
-                "getTypeParameters()[Ljava/lang/reflect/TypeVariable;",
                 "isAnonymousClass()Z",
-                "isHidden()Z",
-                "isRecord()Z",
-                "isSealed()Z"
+                "isRecord()Z"
         ));
         addMethods("java.lang.ClassLoader", List.of(
-                "<init>(Ljava/lang/String;Ljava/lang/ClassLoader;)V",
-                "findResource(Ljava/lang/String;Ljava/lang/String;)Ljava/net/URL;",
-                "getPlatformClassLoader()Ljava/lang/ClassLoader;",
                 "getResource(Ljava/lang/String;)Ljava/net/URL;",
-                "getResources(Ljava/lang/String;)Ljava/util/Enumeration;",
-                "getSystemResources(Ljava/lang/String;)Ljava/util/Enumeration;",
-                "loadClass(Ljava/lang/String;)Ljava/lang/Class;",
-                "packages()Ljava/util/stream/Stream;",
-                "registerAsParallelCapable()Z"
+                "loadClass(Ljava/lang/String;)Ljava/lang/Class;"
         ));
         addMethods("java.lang.Long", List.of(
                 "parseUnsignedLong(Ljava/lang/String;I)J"
         ));
-        addMethods("java.lang.Math", List.of(
-                "fma(DDD)D",
-                "unsignedMultiplyHigh(JJ)J"
-        ));
-        addMethods("java.lang.Package", List.of(
-                "getImplementationVersion()Ljava/lang/String;",
-                "module()Ljava/lang/Module;"
-        ));
-        addMethods("java.lang.SecurityManager", List.of(
-                "checkConnect(Ljava/lang/String;I)V",
-                "checkPackageAccess(Ljava/lang/String;)V",
-                "checkPermission(Ljava/security/Permission;)V",
-                "checkRead(Ljava/lang/String;)V",
-                "checkSecurityAccess(Ljava/lang/String;)V"
-        ));
-        addMethods("java.lang.StrictMath", List.of(
-                "nextDown(D)D",
-                "nextDown(F)F"
-        ));
         addMethods("java.lang.String", List.of(
                 "<init>([BIII)V"
         ));
-        addMethods("java.lang.System", List.of(
-                "exit(I)V",
-                "getenv()Ljava/util/Map;",
-                "mapLibraryName(Ljava/lang/String;)Ljava/lang/String;"
-        ));
-        addMethods("java.lang.Thread", List.of(
-                "isVirtual()Z",
-                "onSpinWait()V",
-                "setContextClassLoader(Ljava/lang/ClassLoader;)V",
-                "threadId()J"
-        ));
-        addMethods("java.lang.invoke.MethodHandles$Lookup", List.of(
-                "ensureInitialized(Ljava/lang/Class;)Ljava/lang/Class;",
-                "lookupClass()Ljava/lang/Class;"
-        ));
-        addMethods("java.lang.invoke.MethodHandles", List.of(
-                "arrayElementVarHandle(Ljava/lang/Class;)Ljava/lang/invoke/VarHandle;",
-                "byteArrayViewVarHandle(Ljava/lang/Class;Ljava/nio/ByteOrder;)Ljava/lang/invoke/VarHandle;",
-                "lookup()Ljava/lang/invoke/MethodHandles$Lookup;",
-                "privateLookupIn(Ljava/lang/Class;Ljava/lang/invoke/MethodHandles$Lookup;)Ljava/lang/invoke/MethodHandles$Lookup;"
-        ));
-        addMethods("java.lang.invoke.MethodType", List.of(
-                "methodType(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;",
-                "methodType(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;",
-                "toMethodDescriptorString()Ljava/lang/String;"
-        ));
-        addMethods("java.lang.reflect.Array", List.of(
-                "newInstance(Ljava/lang/Class;[I)Ljava/lang/Object;"
-        ));
         addMethods("java.lang.reflect.Constructor", List.of(
-                "getGenericParameterTypes()[Ljava/lang/reflect/Type;",
-                "getParameterAnnotations()[[Ljava/lang/annotation/Annotation;",
-                "getParameters()[Ljava/lang/reflect/Parameter;",
-                "getTypeParameters()[Ljava/lang/reflect/TypeVariable;"
+                "getParameters()[Ljava/lang/reflect/Parameter;"
         ));
         addMethods("java.lang.reflect.Field", List.of(
                 "getBoolean(Ljava/lang/Object;)Z",
@@ -199,7 +135,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "getChar(Ljava/lang/Object;)C",
                 "getDouble(Ljava/lang/Object;)D",
                 "getFloat(Ljava/lang/Object;)F",
-                "getGenericType()Ljava/lang/reflect/Type;",
                 "getInt(Ljava/lang/Object;)I",
                 "getLong(Ljava/lang/Object;)J",
                 "getShort(Ljava/lang/Object;)S",
@@ -213,60 +148,22 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "setShort(Ljava/lang/Object;S)V"
         ));
         addMethods("java.lang.reflect.Method", List.of(
-                "getDefaultValue()Ljava/lang/Object;",
-                "getGenericParameterTypes()[Ljava/lang/reflect/Type;",
-                "getGenericReturnType()Ljava/lang/reflect/Type;",
-                "getParameterAnnotations()[[Ljava/lang/annotation/Annotation;",
-                "getSharedExceptionTypes()[Ljava/lang/Class;",
-                "getSharedParameterTypes()[Ljava/lang/Class;",
-                "getTypeParameters()[Ljava/lang/reflect/TypeVariable;",
-                "toShortSignature()Ljava/lang/String;",
-                "toShortString()Ljava/lang/String;"
-        ));
-        addMethods("java.net.URLConnection", List.of(
-                "getPermission()Ljava/security/Permission;"
-        ));
-        addMethods("java.nio.charset.Charset", List.of(
-                "isSupported(Ljava/lang/String;)Z"
-        ));
-        addMethods("java.security.AccessController", List.of(
-                "doPrivileged(Ljava/security/PrivilegedExceptionAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;"
+                "getDefaultValue()Ljava/lang/Object;"
         ));
         addMethods("java.util.Calendar", List.of(
                 "getDisplayNames(IILjava/util/Locale;)Ljava/util/Map;",
                 "getWeekYear()I"
         ));
         addMethods("java.util.TimeZone", List.of(
-                "getTimeZone(Ljava/time/ZoneId;)Ljava/util/TimeZone;",
                 "observesDaylightTime()Z"
-        ));
-        addMethods("java.util.Timer", List.of(
-                "purge()I"
         ));
         addMethods("java.util.UUID", List.of(
                 "<init>(JJ)V",
                 "getLeastSignificantBits()J",
                 "getMostSignificantBits()J"
         ));
-        addMethods("java.util.concurrent.ConcurrentHashMap", List.of(
-                "<init>(IFI)V",
-                "newKeySet()Ljava/util/concurrent/ConcurrentHashMap$KeySetView;"
-        ));
-        addMethods("java.util.logging.Logger", List.of(
-                "setLevel(Ljava/util/logging/Level;)V",
-                "setUseParentHandlers(Z)V"
-        ));
         addMethods("java.util.regex.Matcher", List.of(
-                "appendReplacement(Ljava/lang/StringBuilder;Ljava/lang/String;)Ljava/util/regex/Matcher;",
-                "appendTail(Ljava/lang/StringBuilder;)Ljava/lang/StringBuilder;",
-                "namedGroups()Ljava/util/Map;",
                 "replaceAll(Ljava/util/function/Function;)Ljava/lang/String;"
-        ));
-        addMethods("jakarta.persistence.Column", List.of(
-                "name()Ljava/lang/String;"
-        ));
-        addMethods("jdk.internal.loader.BuiltinClassLoader", List.of(
-                "getDefinedPackage(Ljava/lang/String;)Ljava/lang/Package;"
         ));
 
         // ====================================================================================
@@ -277,23 +174,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         // ====================================================================================
         addMethods("java.beans.ConstructorProperties", List.of(
                 "value()[Ljava/lang/String;"
-        ));
-        addMethods("java.io.ObjectStreamField", List.of(
-                "<init>(Ljava/lang/String;Ljava/lang/Class;)V"
-        ));
-        addMethods("java.lang.InstantiationError", List.of(
-                "<init>(Ljava/lang/String;)V"
-        ));
-        addMethods("java.lang.Module", List.of(
-                "addOpens(Ljava/lang/String;Ljava/lang/Module;)Ljava/lang/Module;",
-                "getName()Ljava/lang/String;",
-                "getResourceAsStream(Ljava/lang/String;)Ljava/io/InputStream;",
-                "isNamed()Z",
-                "isOpen(Ljava/lang/String;Ljava/lang/Module;)Z"
-        ));
-        addMethods("java.lang.StackWalker", List.of(
-                "getInstance()Ljava/lang/StackWalker;",
-                "walk(Ljava/util/function/Function;)Ljava/lang/Object;"
         ));
         addMethods("java.lang.reflect.GenericArrayType", List.of(
                 "getGenericComponentType()Ljava/lang/reflect/Type;"
@@ -323,9 +203,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "getAddress()Ljava/net/InetAddress;",
                 "getHostName()Ljava/lang/String;",
                 "getPort()I"
-        ));
-        addMethods("java.net.URLClassLoader", List.of(
-                "getURLs()[Ljava/net/URL;"
         ));
         addMethods("java.security.MessageDigest", List.of(
                 "<init>(Ljava/lang/String;)V",
@@ -487,22 +364,9 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "<init>(Ljava/lang/Readable;)V",
                 "next()Ljava/lang/String;"
         ));
-        addMethods("java.util.concurrent.LinkedBlockingQueue", List.of(
-                "clear()V",
-                "drainTo(Ljava/util/Collection;I)I",
-                "size()I"
-        ));
-        addMethods("java.util.concurrent.atomic.AtomicIntegerArray", List.of(
-                "<init>(I)V",
-                "get(I)I",
-                "length()I",
-                "set(II)V"
-        ));
         addMethods("java.util.concurrent.atomic.AtomicLongArray", List.of(
                 "<init>(I)V",
-                "get(I)J",
-                "length()I",
-                "set(IJ)V"
+                "get(I)J"
         ));
         addMethods("java.util.concurrent.atomic.AtomicReferenceArray", List.of(
                 "<init>(I)V",
@@ -521,15 +385,8 @@ final class MissingMethodInjector implements ClassHolderTransformer {
                 "tryLock()Z",
                 "unlock()V"
         ));
-        addMethods("javax.xml.datatype.DatatypeFactory", List.of(
-                "newInstance()Ljavax/xml/datatype/DatatypeFactory;"
-        ));
         addMethods("javax.xml.namespace.QName", List.of(
-                "<init>(Ljava/lang/String;)V",
-                "<init>(Ljava/lang/String;Ljava/lang/String;)V",
-                "getLocalPart()Ljava/lang/String;",
-                "getNamespaceURI()Ljava/lang/String;",
-                "getPrefix()Ljava/lang/String;"
+                "<init>(Ljava/lang/String;Ljava/lang/String;)V"
         ));
         addMethods("javax.xml.parsers.DocumentBuilder", List.of(
                 "parse(Lorg/xml/sax/InputSource;)Lorg/w3c/dom/Document;"
@@ -543,50 +400,7 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         ));
         addMethods("javax.xml.parsers.SAXParserFactory", List.of(
                 "newInstance()Ljavax/xml/parsers/SAXParserFactory;",
-                "setFeature(Ljava/lang/String;Z)V",
-                "setNamespaceAware(Z)V",
-                "setValidating(Z)V"
-        ));
-        addMethods("javax.xml.transform.TransformerFactory", List.of(
-                "newInstance()Ljavax/xml/transform/TransformerFactory;",
                 "setFeature(Ljava/lang/String;Z)V"
-        ));
-        addMethods("javax.xml.transform.dom.DOMResult", List.of(
-                "getNode()Lorg/w3c/dom/Node;",
-                "setNode(Lorg/w3c/dom/Node;)V"
-        ));
-        addMethods("javax.xml.transform.dom.DOMSource", List.of(
-                "<init>(Lorg/w3c/dom/Node;)V",
-                "getNode()Lorg/w3c/dom/Node;"
-        ));
-        addMethods("javax.xml.transform.sax.SAXResult", List.of(
-                "<init>(Lorg/xml/sax/ContentHandler;)V",
-                "getHandler()Lorg/xml/sax/ContentHandler;"
-        ));
-        addMethods("javax.xml.transform.sax.SAXSource", List.of(
-                "getInputSource()Lorg/xml/sax/InputSource;",
-                "getXMLReader()Lorg/xml/sax/XMLReader;"
-        ));
-        addMethods("javax.xml.transform.sax.SAXTransformerFactory", List.of(
-                "newTransformer()Ljavax/xml/transform/Transformer;"
-        ));
-        addMethods("javax.xml.transform.stream.StreamResult", List.of(
-                "<init>(Ljava/io/File;)V",
-                "<init>(Ljava/io/OutputStream;)V",
-                "<init>(Ljava/io/Writer;)V",
-                "getOutputStream()Ljava/io/OutputStream;",
-                "getSystemId()Ljava/lang/String;",
-                "getWriter()Ljava/io/Writer;"
-        ));
-        addMethods("javax.xml.transform.stream.StreamSource", List.of(
-                "<init>(Ljava/io/File;)V",
-                "<init>(Ljava/io/InputStream;)V",
-                "<init>(Ljava/io/Reader;)V",
-                "<init>(Ljava/lang/String;)V",
-                "getSystemId()Ljava/lang/String;"
-        ));
-        addMethods("javax.xml.validation.Schema", List.of(
-                "newValidatorHandler()Ljavax/xml/validation/ValidatorHandler;"
         ));
 
         // ====================================================================================
@@ -594,18 +408,8 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         // jOOQ/jaxb/jackson static-init paths. These are all on the existing stub classes;
         // `addMethods` appends rather than overwrites.
         // ====================================================================================
-        addMethods("java.beans.Introspector", List.of(
-                "decapitalize(Ljava/lang/String;)Ljava/lang/String;"
-        ));
-        addMethods("java.lang.Class", List.of(
-                "getProtectionDomain()Ljava/security/ProtectionDomain;"
-        ));
         addMethods("java.lang.ThreadGroup", List.of(
                 "<init>(Ljava/lang/String;)V"
-        ));
-        addMethods("java.lang.invoke.VarHandle", List.of(
-                "get([BI)I",
-                "set([BII)V"
         ));
         addMethods("java.lang.reflect.Parameter", List.of(
                 "getName()Ljava/lang/String;"
@@ -613,12 +417,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("java.lang.reflect.RecordComponent", List.of(
                 "getName()Ljava/lang/String;",
                 "getType()Ljava/lang/Class;"
-        ));
-        addMethods("java.net.InetSocketAddress", List.of(
-                "<init>(Ljava/lang/String;I)V"
-        ));
-        addMethods("java.security.BasicPermission", List.of(
-                "<init>(Ljava/lang/String;)V"
         ));
         addMethods("java.sql.Blob", List.of(
                 "free()V",
@@ -699,41 +497,19 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("java.util.concurrent.atomic.AtomicReferenceArray", List.of(
                 "lazySet(ILjava/lang/Object;)V"
         ));
-        addMethods("java.util.logging.ConsoleHandler", List.of(
-                "setLevel(Ljava/util/logging/Level;)V"
-        ));
-        addMethods("javax.xml.namespace.QName", List.of(
-                "<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
-        ));
-        addMethods("javax.xml.parsers.DocumentBuilder", List.of(
-                "newDocument()Lorg/w3c/dom/Document;"
-        ));
         addMethods("javax.xml.parsers.DocumentBuilderFactory", List.of(
                 "newDocumentBuilder()Ljavax/xml/parsers/DocumentBuilder;",
-                "setNamespaceAware(Z)V",
-                "setValidating(Z)V"
+                "setNamespaceAware(Z)V"
         ));
         addMethods("javax.xml.parsers.SAXParserFactory", List.of(
                 "newSAXParser()Ljavax/xml/parsers/SAXParser;",
                 "setXIncludeAware(Z)V"
-        ));
-        addMethods("javax.xml.transform.sax.SAXTransformerFactory", List.of(
-                "newTransformerHandler()Ljavax/xml/transform/sax/TransformerHandler;"
-        ));
-        addMethods("javax.xml.transform.stream.StreamSource", List.of(
-                "getInputStream()Ljava/io/InputStream;"
         ));
 
         // ====================================================================================
         // Fourth wave — tail of the XML / DOM / SAX surface plus a few remaining JDBC + util
         // leaf methods.
         // ====================================================================================
-        addMethods("java.security.CodeSource", List.of(
-                "getLocation()Ljava/net/URL;"
-        ));
-        addMethods("java.security.ProtectionDomain", List.of(
-                "getCodeSource()Ljava/security/CodeSource;"
-        ));
         addMethods("java.sql.Blob", List.of(
                 "setBytes(J[B)I"
         ));
@@ -761,58 +537,22 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("java.util.Scanner", List.of(
                 "hasNext()Z"
         ));
-        addMethods("java.util.logging.Logger", List.of(
-                "addHandler(Ljava/util/logging/Handler;)V"
-        ));
-        addMethods("javax.xml.namespace.NamespaceContext", List.of(
-                "getPrefix(Ljava/lang/String;)Ljava/lang/String;"
-        ));
-        addMethods("javax.xml.parsers.FactoryConfigurationError", List.of(
-                "<init>(Ljava/lang/Exception;)V"
-        ));
         addMethods("javax.xml.parsers.SAXParser", List.of(
-                "getXMLReader()Lorg/xml/sax/XMLReader;",
                 "parse(Ljava/io/InputStream;Lorg/xml/sax/helpers/DefaultHandler;)V"
         ));
-        addMethods("javax.xml.validation.ValidatorHandler", List.of(
-                "setErrorHandler(Lorg/xml/sax/ErrorHandler;)V"
-        ));
         addMethods("org.w3c.dom.Attr", List.of(
-                "getLocalName()Ljava/lang/String;",
-                "getNamespaceURI()Ljava/lang/String;",
-                "getPrefix()Ljava/lang/String;"
+                "getLocalName()Ljava/lang/String;"
         ));
         addMethods("org.w3c.dom.Element", List.of(
                 "getAttributes()Lorg/w3c/dom/NamedNodeMap;",
                 "getChildNodes()Lorg/w3c/dom/NodeList;"
         ));
         addMethods("org.w3c.dom.Node", List.of(
-                "getAttributes()Lorg/w3c/dom/NamedNodeMap;",
-                "getNodeType()S",
-                "getNodeValue()Ljava/lang/String;",
-                "getOwnerDocument()Lorg/w3c/dom/Document;",
-                "getParentNode()Lorg/w3c/dom/Node;"
-        ));
-        addMethods("org.xml.sax.ContentHandler", List.of(
-                "characters([CII)V",
-                "endDocument()V",
-                "endElement(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
-                "endPrefixMapping(Ljava/lang/String;)V",
-                "setDocumentLocator(Lorg/xml/sax/Locator;)V",
-                "startDocument()V",
-                "startElement(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/xml/sax/Attributes;)V",
-                "startPrefixMapping(Ljava/lang/String;Ljava/lang/String;)V"
+                "getNodeType()S"
         ));
         addMethods("org.xml.sax.InputSource", List.of(
                 "<init>(Ljava/io/InputStream;)V",
-                "<init>(Ljava/io/Reader;)V",
-                "setSystemId(Ljava/lang/String;)V"
-        ));
-        addMethods("org.xml.sax.XMLReader", List.of(
-                "getFeature(Ljava/lang/String;)Z",
-                "parse(Lorg/xml/sax/InputSource;)V",
-                "setContentHandler(Lorg/xml/sax/ContentHandler;)V",
-                "setFeature(Ljava/lang/String;Z)V"
+                "<init>(Ljava/io/Reader;)V"
         ));
 
         // ====================================================================================
@@ -830,54 +570,26 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("javax.xml.validation.SchemaFactory", List.of(
                 "newInstance(Ljava/lang/String;)Ljavax/xml/validation/SchemaFactory;"
         ));
-        addMethods("javax.xml.validation.ValidatorHandler", List.of(
-                "setDocumentLocator(Lorg/xml/sax/Locator;)V"
-        ));
-        addMethods("org.glassfish.jaxb.core.v2.runtime.unmarshaller.LocatorEx", List.of(
-                "getColumnNumber()I"
-        ));
         addMethods("org.w3c.dom.Attr", List.of(
                 "getName()Ljava/lang/String;",
                 "getValue()Ljava/lang/String;"
         ));
         addMethods("org.w3c.dom.Document", List.of(
-                "createElementNS(Ljava/lang/String;Ljava/lang/String;)Lorg/w3c/dom/Element;",
-                "createTextNode(Ljava/lang/String;)Lorg/w3c/dom/Text;",
                 "getDocumentElement()Lorg/w3c/dom/Element;"
-        ));
-        addMethods("org.w3c.dom.Element", List.of(
-                "getParentNode()Lorg/w3c/dom/Node;"
         ));
         addMethods("org.w3c.dom.NamedNodeMap", List.of(
                 "getLength()I",
                 "item(I)Lorg/w3c/dom/Node;"
         ));
-        addMethods("org.w3c.dom.Node", List.of(
-                "appendChild(Lorg/w3c/dom/Node;)Lorg/w3c/dom/Node;",
-                "getLastChild()Lorg/w3c/dom/Node;"
-        ));
         addMethods("org.w3c.dom.NodeList", List.of(
                 "getLength()I",
                 "item(I)Lorg/w3c/dom/Node;"
-        ));
-        addMethods("org.xml.sax.Attributes", List.of(
-                "getLength()I",
-                "getURI(I)Ljava/lang/String;",
-                "getValue(I)Ljava/lang/String;"
         ));
         addMethods("org.xml.sax.InputSource", List.of(
                 "getByteStream()Ljava/io/InputStream;",
                 "getCharacterStream()Ljava/io/Reader;",
                 "getEncoding()Ljava/lang/String;",
-                "setByteStream(Ljava/io/InputStream;)V",
                 "setCharacterStream(Ljava/io/Reader;)V"
-        ));
-        addMethods("org.xml.sax.Locator", List.of(
-                "getPublicId()Ljava/lang/String;",
-                "getSystemId()Ljava/lang/String;"
-        ));
-        addMethods("org.xml.sax.XMLReader", List.of(
-                "setErrorHandler(Lorg/xml/sax/ErrorHandler;)V"
         ));
 
         // ====================================================================================
@@ -886,45 +598,16 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("java.util.Locale$Builder", List.of(
                 "setScript(Ljava/lang/String;)Ljava/util/Locale$Builder;"
         ));
-        addMethods("javax.xml.transform.Transformer", List.of(
-                "transform(Ljavax/xml/transform/Source;Ljavax/xml/transform/Result;)V"
-        ));
-        addMethods("javax.xml.transform.stream.StreamSource", List.of(
-                "getReader()Ljava/io/Reader;"
-        ));
         addMethods("javax.xml.validation.SchemaFactory", List.of(
                 "newSchema(Ljava/net/URL;)Ljavax/xml/validation/Schema;"
         ));
-        addMethods("javax.xml.validation.ValidatorHandler", List.of(
-                "endDocument()V",
-                "endPrefixMapping(Ljava/lang/String;)V",
-                "startDocument()V",
-                "startPrefixMapping(Ljava/lang/String;Ljava/lang/String;)V"
-        ));
-        addMethods("org.glassfish.jaxb.core.v2.runtime.unmarshaller.LocatorEx", List.of(
-                "getLineNumber()I",
-                "getLocation()Ljakarta/xml/bind/ValidationEventLocator;"
-        ));
         addMethods("org.w3c.dom.Element", List.of(
                 "getLocalName()Ljava/lang/String;",
-                "getNamespaceURI()Ljava/lang/String;",
                 "getTagName()Ljava/lang/String;",
-                "getTextContent()Ljava/lang/String;",
-                "hasAttributeNS(Ljava/lang/String;Ljava/lang/String;)Z",
-                "removeAttributeNS(Ljava/lang/String;Ljava/lang/String;)V",
-                "setAttributeNS(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+                "getTextContent()Ljava/lang/String;"
         ));
         addMethods("org.w3c.dom.Node", List.of(
                 "getTextContent()Ljava/lang/String;"
-        ));
-        addMethods("org.w3c.dom.Text", List.of(
-                "appendData(Ljava/lang/String;)V"
-        ));
-        addMethods("org.xml.sax.Attributes", List.of(
-                "getQName(I)Ljava/lang/String;"
-        ));
-        addMethods("org.xml.sax.Locator", List.of(
-                "getColumnNumber()I"
         ));
 
         // ====================================================================================
@@ -1042,9 +725,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addFields("com.beanit.jasn1.ber.types.BerOctetString", List.of(
                 "value|[B"
         ));
-        addFields("java.lang.StackWalker$Option", List.of(
-                "RETAIN_CLASS_REFERENCE|Ljava/lang/StackWalker$Option;|static"
-        ));
         addFields("io.r2dbc.spi.Nullability", List.of(
                 "NULLABLE|Lio/r2dbc/spi/Nullability;|static",
                 "UNKNOWN|Lio/r2dbc/spi/Nullability;|static",
@@ -1067,10 +747,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         addMethods("org.jooq.tools.reflect.Compile", List.of(
                 "compile(Ljava/lang/String;Ljava/lang/String;Lorg/jooq/tools/reflect/CompileOptions;)Ljava/lang/Class;"
         ));
-        addMethods("java.lang.Math", List.of(
-                "scalb(DI)D",
-                "scalb(FI)F"
-        ));
         addMethods("java.lang.reflect.GenericDeclaration", List.of(
                 "getTypeParameters()[Ljava/lang/reflect/TypeVariable;"
         ));
@@ -1079,9 +755,6 @@ final class MissingMethodInjector implements ClassHolderTransformer {
         ));
         addMethods("io.r2dbc.spi.Nullability", List.of(
                 "ordinal()I"
-        ));
-        addMethods("java.lang.StackWalker", List.of(
-                "getInstance(Ljava/lang/StackWalker$Option;)Ljava/lang/StackWalker;"
         ));
 
         // ====================================================================================

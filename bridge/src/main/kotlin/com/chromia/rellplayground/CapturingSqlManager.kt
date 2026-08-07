@@ -51,4 +51,3 @@ private class CapturingSqlExecutor(private val channel: BufferedReplChannel) : S
         channel.appendSql(sql)
     }
 }
-

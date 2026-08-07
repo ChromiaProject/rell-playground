@@ -4,14 +4,10 @@
 
 package com.chromia.rellplayground.teavm;
 
-import java.util.Set;
-import org.teavm.model.ClassHolder;
-import org.teavm.model.ClassHolderTransformer;
-import org.teavm.model.ClassHolderTransformerContext;
-import org.teavm.model.ElementModifier;
-import org.teavm.model.MethodHolder;
-import org.teavm.model.Program;
+import org.teavm.model.*;
 import org.teavm.model.emit.ProgramEmitter;
+
+import java.util.Set;
 
 /**
  * Works around a TeaVM 0.15 WasmGC codegen crash. {@code WasmGCMethodGenerator.createInstanceFunction}
@@ -42,8 +38,8 @@ final class AbstractMethodBodyStubber implements ClassHolderTransformer {
         }
         for (MethodHolder method : cls.getMethods()) {
             if (method.hasModifier(ElementModifier.ABSTRACT)
-                    && !method.hasModifier(ElementModifier.NATIVE)
-                    && method.getProgram() == null) {
+                && !method.hasModifier(ElementModifier.NATIVE)
+                && method.getProgram() == null) {
                 method.getModifiers().remove(ElementModifier.ABSTRACT);
                 method.setProgram(buildThrowStub(method, context));
             }
@@ -54,7 +50,7 @@ final class AbstractMethodBodyStubber implements ClassHolderTransformer {
         var emitter = ProgramEmitter.create(method, context.getHierarchy());
         emitter.construct(UnsupportedOperationException.class,
                 emitter.constant("not in TeaVM: " + method.getOwnerName() + "." + method.getName()))
-                .raise();
+            .raise();
         return emitter.getProgram();
     }
 }

@@ -6,23 +6,24 @@ package com.chromia.rellplayground
 
 import net.postchain.rell.base.runtime.Rt_RellVersion
 
-
-object PlaygroundBridge {/**
- * JVM-side surface that the SPA worker calls into via CheerpJ's Java↔JS bridge.
- * Every method returns a JSON-encoded string so the cross-runtime payload is
- * simple to parse on the SPA side.
- *
- * State (session map, id counter) lives on the JVM heap inside this object —
- * the worker holds an `await lib.com.chromia.rellplayground.PlaygroundBridge`
- * reference and calls these instance methods repeatedly.
- *
- * Result envelope:
- *   `{"ok": boolean, "events": [ { "type": "stdout"|"value"|"compiler"|... , ... }, ... ]}`
- * One-file mode discards the session after `runFile`. REPL mode keeps it
- * around between `replExecute` calls.
- */
-@Suppress("unused")
+object PlaygroundBridge {
+    /**
+     * JVM-side surface that the SPA worker calls into via CheerpJ's Java↔JS bridge.
+     * Every method returns a JSON-encoded string so the cross-runtime payload is
+     * simple to parse on the SPA side.
+     *
+     * State (session map, id counter) lives on the JVM heap inside this object —
+     * the worker holds an `await lib.com.chromia.rellplayground.PlaygroundBridge`
+     * reference and calls these instance methods repeatedly.
+     *
+     * Result envelope:
+     *   `{"ok": boolean, "events": [ { "type": "stdout"|"value"|"compiler"|... , ... }, ... ]}`
+     * One-file mode discards the session after `runFile`. REPL mode keeps it
+     * around between `replExecute` calls.
+     */
+    @Suppress("unused")
     private val sessions: MutableMap<Int, ReplSession> = HashMap()
+
     private var nextId = 1
 
     @JvmStatic

@@ -4,14 +4,15 @@
 
 package com.chromia.rellplayground.teavm;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.teavm.dependency.AbstractDependencyListener;
 import org.teavm.dependency.DependencyAgent;
 import org.teavm.dependency.DependencyNode;
 import org.teavm.dependency.MethodDependency;
 import org.teavm.model.MethodReference;
 import org.teavm.model.ValueType;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Works around a TeaVM 0.15 reflection-emit crash. When {@code Class.newInstance},

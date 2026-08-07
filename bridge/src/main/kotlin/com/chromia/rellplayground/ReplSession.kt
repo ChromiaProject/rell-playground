@@ -58,7 +58,8 @@ class ReplSession {
         null // null — channel still holds the last attempt's events
     }
 
-    val ready: Boolean get() = interpreter != null
+    val ready: Boolean
+        get() = interpreter != null
 
     /** Run one command; returns the JSON-encoded events captured for it. */
     fun execute(command: String): String {

@@ -108,6 +108,7 @@ class BufferedReplChannel : ReplOutputChannel {
                 '\r' -> append("\\r")
                 '\t' -> append("\\t")
                 '\b' -> append("\\b")
+
                 else -> if (ch.code < 0x20) {
                     append("\\u").append(ch.code.toString(16).padStart(4, '0'))
                 } else {
